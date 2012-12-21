@@ -5,7 +5,7 @@
 import random
 
 import numpy as np
-import pylab as pl
+from matplotlib import pyplot as pl
 from matplotlib.patches import Polygon
 from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import fbeta_score, f1_score, precision_score, recall_score
@@ -32,7 +32,7 @@ def score(y_true, y_pred, labels=None, pos_label=1, average='weighted'):
 
 def cross_validate(data, class_values):
     pars = {'cost': [1.0, 10.0, 100.0],
-            'cost_ratio': [float(x)/4 for x in range(3, 10)]}
+            'cost_ratio': [float(x)/4 for x in range(4, 10)]}
     search = GridSearchCV(SvmLightEstimator(), pars, score_func = score)
     search.fit(data, class_values)
     return search
@@ -46,7 +46,8 @@ def get_docs_and_class_values(data):
     class_values = [m[x[2]] for x in data]
     return docs, class_values
 
-def plot(data, plane):
+def plot(data, plane, name):
+    pl.clf()
     pos = [x for x in data if x[2]]
     neg = [x for x in data if not x[2]]
 
@@ -63,8 +64,8 @@ def plot(data, plane):
     up = plane[1] > 0
     verts = [(0,0),
              (plane[0], plane[1]),
-             (1 + plane[0], gradient + plane[1]),
-             (1, gradient)]
+             (2 + plane[0], 2*gradient + plane[1]),
+             (2, 2*gradient)]
     poly = Polygon(verts, facecolor='0.8', edgecolor='k')
     ax.add_patch(poly)
     #pl.show()
@@ -74,7 +75,7 @@ def plot(data, plane):
 
     ax.set_xlim(left=0, right=1)
     ax.set_ylim(bottom=0, top=1)
-    pl.show()
+    pl.savefig(name)
 
 if __name__ == "__main__":
     data = get_cone_data()
@@ -83,12 +84,30 @@ if __name__ == "__main__":
     
     search = cross_validate(docs, class_values)
 
-    for params, mean_score, scores in search.grid_scores_:
+    plane = search.best_estimator_.model.plane
+    plot(data, plane, 'first_plane.pdf')
+
+    # Remove negative class instances that the classifier gets right
+    # i.e. true negatives 
+    judgments = search.predict(docs)
+    new_data = []
+    new_docs = []
+    new_class_values = []
+    for i in range(len(data)):
+        if not (class_values[i] == -1 and judgments[i] == -1):
+            new_data.append(data[i])
+            new_docs.append(docs[i])
+            new_class_values.append(class_values[i])
+
+    new_search = cross_validate(new_docs, new_class_values)
+            
+
+    for params, mean_score, scores in new_search.grid_scores_:
         print "%0.3f (+/-%0.03f) for %r" % (
             mean_score, scores.std() / 2, params)
    
 
-    print search.best_score_, search.best_params_
+    print new_search.best_score_, new_search.best_params_
 
-    plane = search.best_estimator_.model.plane
-    plot(data, plane)
+    new_plane = new_search.best_estimator_.model.plane
+    plot(new_data, new_plane, 'second_plane.pdf')
