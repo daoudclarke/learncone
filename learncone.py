@@ -57,15 +57,10 @@ def plot(data, plane):
 
     ax = pl.subplot(111)
 
-    #x = pl.arange(0, 1, 0.01)
-    #y = plane_func(x)
     pl.plot([0,1], [0,gradient], linewidth=1)
 
     # make the shaded region
     up = plane[1] > 0
-    #ix = pl.arange(a, b, 0.01)
-    #iy = plane_func(ix)
-    #verts = [(a,0)] + list(zip(ix,iy)) + [(b,0)]
     verts = [(0,0),
              (plane[0], plane[1]),
              (1 + plane[0], gradient + plane[1]),
