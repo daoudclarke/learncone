@@ -8,6 +8,8 @@ import numpy as np
 from numpy import random
 from numpy.linalg import norm, inv
 from math import sqrt
+from sklearn.metrics import fbeta_score, f1_score, precision_score, recall_score
+from scipy import optimize
 
 import svmlight as svm
 
@@ -86,7 +88,36 @@ def learn_cone(docs, class_values, dimensions):
     #print [list(x) for x in basis]
     basis = np.array([x/norm(x) for x in basis.T]).T
     return basis
-        
+
+def learn_cone_anneal(docs, class_values, dimensions):
+    vectors = [np.array([x[1] for x in doc.vector])
+                   for doc in docs]
+    #print vectors
+
+    initial = random.random_sample(dimensions**2)*2 - 1.0
+    print initial
+    
+    upper = np.array([1.]*(dimensions**2))
+    lower = np.array([-1.]*(dimensions**2))
+
+    def fitness(vals):
+        matrix = vals.reshape( (dimensions, dimensions) )
+        lattice = Lattice(matrix)
+        zero = np.zeros(lattice.dimensions)
+        truth_map = {True:1, False:-1}
+        predictions = [truth_map[lattice.ge(v, zero)]
+                       for v in vectors]
+        return -f1_score(class_values, predictions)
+
+    print fitness(initial)
+    result = optimize.anneal(fitness, initial,
+                             lower=-1., #lower,
+                             upper=1.) #upper)
+    print result
+    learnt = result[0].reshape( (dimensions, dimensions) )
+    return np.array([x/norm(x) for x in learnt.T]).T
+    
+    
      
 def run():
     dimensions = 2
@@ -95,7 +126,7 @@ def run():
     lattice = Lattice(basis)
     #print lattice
     docs, class_values = generate_data(lattice)
-    learnt = learn_cone(docs, class_values, dimensions)
+    learnt = learn_cone_anneal(docs, class_values, dimensions)
     distance = basis_distance(basis, learnt)
     print "Original: "
     print basis
@@ -105,7 +136,7 @@ def run():
     return distance
 
 if __name__ == "__main__":
-    runs = 10
+    runs = 1
     distances = [run() for i in range(runs)]
     print "Distances:"
     print distances
