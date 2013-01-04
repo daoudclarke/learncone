@@ -11,7 +11,7 @@ class Lattice:
         """
         self.dimensions = len(basis)
         self.basis_matrix = np.matrix(basis)
-        self.basis_inverse = self.basis_matrix.getI()
+        self.basis_inverse = np.linalg.inv(self.basis_matrix)
 
 
     def meet(self, u, v):

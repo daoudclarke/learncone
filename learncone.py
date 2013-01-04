@@ -6,7 +6,7 @@
 #import learnplane
 import numpy as np
 from numpy import random
-from numpy.linalg import norm, inv
+from numpy.linalg import norm, inv, matrix_rank, det
 from math import sqrt
 from sklearn.metrics import fbeta_score, f1_score, precision_score, recall_score
 from scipy import optimize
@@ -18,11 +18,14 @@ import svmlight as svm
 from lattice import Lattice
 import learnplane
 
-np.random.seed(1)
+np.random.seed(2)
 
 def generate_basis(dimensions):
     basis = [random.random_sample(dimensions)*2 - 1.0 for i in range(dimensions)]
     normalised = [x/norm(x) for x in basis]
+    if matrix_rank(normalised) != dimensions:
+        raise ValueError("Singular matrix")
+    print "Determinant:", det(normalised)
     return np.array(normalised).T
 
 def sort_matrix(m):
@@ -41,7 +44,12 @@ def generate_data(lattice):
     class_values = []
     zero = np.zeros(lattice.dimensions)
     for i in xrange(2000):
-        v = random.random_sample(lattice.dimensions)*2 - 1.0
+        # Generate positive data half the time
+        if random.random_sample() > 0.5:
+            v = random.random_sample(lattice.dimensions)
+            v = np.array(np.dot(lattice.basis_matrix, v))[0]
+        else:
+            v = random.random_sample(lattice.dimensions)*2 - 1.0
         doc = svm.Document(i, svm.SupportVector([
                     (j + 1, v[j]) for j in range(lattice.dimensions)]))
         docs.append(doc)
@@ -159,11 +167,10 @@ def get_stats(cone, docs, class_values):
     recall = recall_score(class_values, predictions)
     return precision, recall, f1    
      
-def run(dimensions, method, basis):
-    #print basis
-    lattice = Lattice(basis)
-    #print lattice
-    docs, class_values = generate_data(lattice)
+def run(dimensions, method, basis, docs, class_values):
+    num_pos = len([x for x in class_values if x == 1.0])
+    print "Total number of instances:", len(docs)
+    print "Number of positives: ", num_pos
     train_size = len(docs)/2
     train_docs = docs[:train_size]
     train_class_values = class_values[:train_size]
@@ -187,9 +194,9 @@ def run(dimensions, method, basis):
 
 if __name__ == "__main__":
     runs = 10
-    methods = {"svm": learn_cone}
-               #"anneal": learn_cone_anneal,
-               #"random": learn_cone_random}
+    methods = {#"svm": learn_cone}
+               "anneal": learn_cone_anneal,
+               "random": learn_cone_random}
     with open('results.csv', 'wb') as csvfile:
         results_file = csv.writer(csvfile)
         results_file.writerow(["Dimensions",
@@ -199,10 +206,13 @@ if __name__ == "__main__":
                                "Recall", "Error",
                                "F1", "Error",
                                "Time", "Error"])
-        for dimensions in [4]:
+        for dimensions in [50]:
             cones = [generate_basis(dimensions) for i in range(runs)]
+            lattices = [Lattice(cone) for cone in cones]
+            data = [generate_data(lattice) for lattice in lattices]
             for method in methods.keys():
-                results = [run(dimensions, methods[method], cone) for cone in cones]
+                results = [run(dimensions, methods[method], cones[i],
+                               data[i][0], data[i][1]) for i in range(runs)]
                 print "Results"
                 print results
                 distances = np.array([r[0] for r in results])
