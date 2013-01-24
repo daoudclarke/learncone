@@ -6,11 +6,13 @@
 #import learnplane
 import numpy as np
 from numpy import random
-from numpy.linalg import norm, inv, matrix_rank, det
+from numpy.linalg import norm, inv, matrix_rank, det, pinv
 from math import sqrt
 from sklearn.metrics import fbeta_score, f1_score, precision_score, recall_score
 from scipy import optimize
 from datetime import datetime
+
+import logging
 
 import csv
 import svmlight as svm
@@ -58,7 +60,7 @@ def generate_data(lattice):
     return docs, class_values
 
 def convert(docs, class_values):
-    print class_values
+    #print class_values
     data = []
     for i in range(len(docs)):
         data.append(tuple(docs[i].vector) + (class_values[i] == 1.,) )
@@ -112,16 +114,76 @@ def learn_cone(docs, class_values, dimensions):
     basis = np.array([x/norm(x) for x in basis.T]).T
     return basis
 
+def positive(m, v):
+    product = np.dot(m, v)
+    return (product >= -1e-10).all()
+
+def add_if_safe(vectors, vector_to_add):
+    """Only add the vector to the matrix if the new set of vectors
+    are linearly independent."""
+    if matrix_rank(vectors + [vector_to_add]) > len(vectors):
+        vectors.append(vector_to_add)
+    else:
+        logging.debug("Skipping vector due to linear dependence")
+
+
+# def get_initial(vectors, class_values, final_dimensions):
+#     # Take the first d positive vectors and get their inverse
+#     logging.info("Creating initial cone in %d dimensions from %d positive vectors",
+#                  len(vectors[0]),
+#                  len([x for x in class_values if x == 1.0]))
+#     logging.debug("Class values: %s", str(class_values))
+#     positives = []
+#     i = 0
+#     dimensions = len(vectors[0])
+#     while len(positives) < dimensions:
+#         if i == len(vectors):
+#             logging.info("Adding %d random vectors to initial cone", dimensions - len(positives))
+#         if i >= len(vectors):
+#             add_if_safe(positives, random.random_sample(dimensions)*2 - 1.0) 
+#         elif class_values[i] == 1.0:
+#             add_if_safe(positives, vectors[i])
+#         i += 1
+#     initial = inv(np.array(positives).T)
+#     normalised = np.array([x/norm(x) for x in initial])
+#     # prod = np.dot(normalised, positives[0])
+#     # print prod
+#     # print norm(prod)
+#     assert positive(normalised, positives[0])
+#     reshaped = normalised.reshape(dimensions*dimensions)
+#     return np.array([reshaped[i] for i in range(final_dimensions)])
+
+def get_initial(vectors, class_values, dimensions):
+    # Take the first d positive vectors and get their inverse
+    logging.info("Creating initial cone in %d dimensions from %d positive vectors",
+                 dimensions,
+                 len([x for x in class_values if x == 1.0]))
+    logging.debug("Class values: %s", str(class_values))
+    positives = []
+    i = 0
+    while len(positives) < dimensions:
+        if i >= len(vectors):
+            raise ValueError("Not enough positive vectors for specified dimensions")
+        if class_values[i] == 1.0:
+            positives.append(vectors[i])
+        i += 1
+    inverse = pinv(positives)
+    logging.debug("Inverse matrix: %s", str(inverse))
+    return inverse.T.reshape(len(vectors[0])*dimensions)
+
 def learn_cone_anneal(docs, class_values, dimensions):
     vectors = [np.array([x[1] for x in doc.vector])
                    for doc in docs]
-    #print vectors
+    return learn_cone_anneal_vectors(
+        vectors, class_values, dimensions)
 
-    initial = random.random_sample(dimensions**2)*2 - 1.0
-    print initial
+def learn_cone_anneal_vectors(vectors, class_values, dimensions):
+    #initial = random.random_sample(dimensions**2)*2 - 1.0
+    initial = get_initial(vectors, class_values)
+    #print initial
     
-    upper = np.array([1.]*(dimensions**2))
-    lower = np.array([-1.]*(dimensions**2))
+    upper = 1. #np.array([1.]*(dimensions**2))
+    lower = -1. #np.array([-1.]*(dimensions**2))
 
     def fitness(vals):
         # Return a high score if out of range
@@ -132,24 +194,75 @@ def learn_cone_anneal(docs, class_values, dimensions):
             return max(max_v, -min_v)
         #print vals
         matrix = vals.reshape( (dimensions, dimensions) )
-        lattice = Lattice(matrix)
-        zero = np.zeros(lattice.dimensions)
+        #lattice = Lattice(matrix)
+        #zero = np.zeros(lattice.dimensions)
         truth_map = {True:1, False:-1}
-        predictions = [truth_map[lattice.ge(v, zero)]
+        predictions = [truth_map[positive(matrix, v)]
                        for v in vectors]
         return -f1_score(class_values, predictions)
 
-    print fitness(initial)
+    print "Initial fitness: ", fitness(initial)
     result = optimize.anneal(fitness, initial,
                              schedule = 'fast',
-                             lower=-1., #lower,
-                             upper=1.,
-                             quench=1) #upper)
+                             lower=-1,
+                             upper=1,
+                             T0=1e-12,
+                             Tf=None,
+                             maxaccept=2*dimensions,
+                             maxiter=dimensions**2,
+                             quench=1,
+                             #dwell=dimensions**2,
+                             feps=0.0,
+                             full_output=True)
     #result = optimize.fmin(fitness, initial)
 
     print result
     learnt = result[0].reshape( (dimensions, dimensions) )
-    return np.array([x/norm(x) for x in learnt.T]).T
+    basis = inv(learnt)
+    return np.array([x/norm(x) for x in basis.T]).T
+
+def learn_cone_descent(docs, class_values, dimensions):
+    vectors = [np.array([x[1] for x in doc.vector])
+                   for doc in docs]
+    learnt = learn_cone_descent_vectors(docs, class_values, dimensions)
+    basis = inv(learnt)
+    return np.array([x/norm(x) for x in basis.T]).T
+
+def learn_cone_descent_vectors(vectors, class_values, dimensions):
+    initial = get_initial(vectors, class_values, dimensions)
+    def fitness(vals):
+        matrix = vals.reshape( (dimensions, len(vectors[0])) )
+        truth_map = {True:1, False:0}
+        predictions = [truth_map[positive(matrix, v)]
+                       for v in vectors]
+        logging.debug("Fitness precision: %f recall: %f",
+                      precision_score(class_values, predictions),
+                      recall_score(class_values, predictions))
+        return f1_score(class_values, predictions)
+
+    best = initial
+    best_fitness = fitness(initial)
+    logging.debug("Initial fitness: %f", best_fitness)
+    accepts = 0
+    for i in xrange(3000):
+        #diff = 0.01*(random.random_sample(dimensions**2)*2. - 1.)
+        new = best.copy()
+        diff = (random.random_sample()*2. - 1.)
+        new[random.randint(dimensions*len(vectors[0]))] += diff
+        new_fitness = fitness(new) 
+        if new_fitness > best_fitness:
+            logging.debug("Found new best fitness: %f", new_fitness)
+            accepts += 1
+            best = new
+            best_fitness = new_fitness
+        if (accepts > 5*dimensions**2
+            or best_fitness > 0.90):
+            break
+
+    logging.info("Best fitness: %f", best_fitness)
+    logging.info("Iterations: %d", i)
+    learnt = best.reshape( (dimensions, len(vectors[0])) )
+    return learnt
     
 def get_stats(cone, docs, class_values):
     vectors = [np.array([x[1] for x in doc.vector])
@@ -157,6 +270,7 @@ def get_stats(cone, docs, class_values):
     try:
         lattice = Lattice(cone)
     except:
+        print "Unable to compute inverse for stats"
         return (0., 0., 0.)
     zero = np.zeros(lattice.dimensions)
     truth_map = {True:1, False:-1}
@@ -184,19 +298,22 @@ def run(dimensions, method, basis, docs, class_values):
     test_docs = docs[train_size:]
     test_class_values = class_values[train_size:]
     stats = get_stats(learnt, test_docs, test_class_values)
-    print "Original: "
-    print basis
-    print "Learnt: "
-    print learnt
+    #print "Original: "
+    #print basis
+    #print "Learnt: "
+    #print learnt
     print "Distance: ", distance 
     print "Time: ", time
     return (distance,) + stats + (time,)
 
 if __name__ == "__main__":
     runs = 10
-    methods = {#"svm": learn_cone}
-               "anneal": learn_cone_anneal,
-               "random": learn_cone_random}
+    methods = {
+        #"svm": learn_cone}
+        #"anneal": learn_cone_anneal,
+        "descent": learn_cone_descent,
+        #"random": learn_cone_random
+        }
     with open('results.csv', 'wb') as csvfile:
         results_file = csv.writer(csvfile)
         results_file.writerow(["Dimensions",
@@ -206,15 +323,15 @@ if __name__ == "__main__":
                                "Recall", "Error",
                                "F1", "Error",
                                "Time", "Error"])
-        for dimensions in [50]:
+        for dimensions in [100]:
             cones = [generate_basis(dimensions) for i in range(runs)]
             lattices = [Lattice(cone) for cone in cones]
             data = [generate_data(lattice) for lattice in lattices]
             for method in methods.keys():
                 results = [run(dimensions, methods[method], cones[i],
                                data[i][0], data[i][1]) for i in range(runs)]
-                print "Results"
-                print results
+                #print "Results"
+                #print results
                 distances = np.array([r[0] for r in results])
                 print "Distance:", distances.mean(), "+/-", distances.std()/sqrt(runs)
                 precisions = np.array([r[1] for r in results])
