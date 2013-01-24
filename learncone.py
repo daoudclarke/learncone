@@ -244,7 +244,7 @@ def learn_cone_descent_vectors(vectors, class_values, dimensions):
     best_fitness = fitness(initial)
     logging.debug("Initial fitness: %f", best_fitness)
     accepts = 0
-    for i in xrange(3000):
+    for i in xrange(400):
         #diff = 0.01*(random.random_sample(dimensions**2)*2. - 1.)
         new = best.copy()
         diff = (random.random_sample()*2. - 1.)
@@ -256,7 +256,7 @@ def learn_cone_descent_vectors(vectors, class_values, dimensions):
             best = new
             best_fitness = new_fitness
         if (accepts > 5*dimensions**2
-            or best_fitness > 0.90):
+            or best_fitness > 0.95):
             break
 
     logging.info("Best fitness: %f", best_fitness)

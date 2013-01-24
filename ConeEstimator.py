@@ -1,7 +1,10 @@
 # Bismillahi-r-Rahmani-r-Rahim
 
+import logging
+
 from sklearn.base import BaseEstimator
 from sklearn.multiclass import OneVsRestClassifier
+from sklearn.metrics import f1_score, precision_score, recall_score
 
 import numpy as np
 
@@ -32,16 +35,24 @@ class ConeEstimatorTwoClass(BaseEstimator):
         return self
 
     def fit(self, data, class_values):
+        logging.info("Starting cone learning from %d data points", len(data))
         self.model = learncone.learn_cone_descent_vectors(
             data, class_values, 5)
-        #print self.model
+        predictions = self.predict(data)
+        logging.info("Training set precision: %f recall: %f f1: %f",
+                      precision_score(class_values, predictions),
+                      recall_score(class_values, predictions),
+                      f1_score(class_values, predictions))
     
     def predict(self, data):
         return [1 if x >= -1e-10 else 0
-                for x in decision_function(data)]
+                for x in self.decision_function(data)]
         #return [1 for x in data]
         # return [1 if self.model.classify(d) > 0 else -1
         #         for d in data]
 
-    def decision_function(self, data):
-        return [min(np.dot(self.model, x)) for x in data]
+    def decision_function(self, data):        
+        logging.info("Predicting %d values", len(data))
+        decisions = [min(np.dot(self.model, x)) for x in data]
+        logging.debug("First 100 decision values: %s", str(decisions[:100]))
+        return decisions

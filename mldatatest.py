@@ -16,6 +16,7 @@ from sklearn.datasets import fetch_mldata
 from sklearn.metrics import fbeta_score, f1_score, precision_score, recall_score
 
 import logging
+import profile
 
 def run():
     logging.info("Starting test")
@@ -23,8 +24,8 @@ def run():
     #                           ('classification', ConeEstimator())])
     cone_pipeline = Pipeline([('random PCA', RandomizedPCA(n_components=50)),
                               ('classification', ConeEstimator())])
-    classifiers = [#DecisionTreeClassifier(),
-                   #MultinomialNB(),
+    classifiers = [DecisionTreeClassifier(),
+                   MultinomialNB(),
         ConeEstimator()]
         #cone_pipeline]
 
@@ -47,7 +48,7 @@ if __name__ == "__main__":
                         level=logging.DEBUG,
                         format='%(asctime)s %(levelname)s %(message)s')
     try:
-        run()
+        profile.run("run()")
     except:
         logging.exception("Exception on test run - aborting")
         raise
