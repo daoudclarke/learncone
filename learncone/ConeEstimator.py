@@ -50,7 +50,7 @@ class ConeEstimatorTwoClass(ConeEstimatorBase):
         if self.dimensions < 1:
             raise ValueError("Need at least one dimension to fit data.")
         logging.info("Starting cone learning from %d data points", len(data))
-        self.model = self.learn_cone_descent_vectors(
+        self.model = self.learn_cone_gradient(
             data, class_values)
         predictions = self.predict(data)
         logging.info("Training set precision: %f recall: %f f1: %f",
@@ -61,9 +61,6 @@ class ConeEstimatorTwoClass(ConeEstimatorBase):
     def predict(self, data):
         return [1 if x > 0 else 0
                 for x in self.decision_function(data)]
-        #return [1 for x in data]
-        # return [1 if self.model.classify(d) > 0 else -1
-        #         for d in data]
 
     def decision_function(self, data):        
         logging.info("Predicting %d values", len(data))
@@ -72,59 +69,34 @@ class ConeEstimatorTwoClass(ConeEstimatorBase):
         logging.debug("First 100 decision values: %s", str(decisions[:100]))
         return decisions
 
-    def get_initial(self, vectors, class_values):
-        # Take the first d positive vectors and get their inverse
-        logging.info("Creating initial cone in %d dimensions", self.dimensions)
-        logging.debug("Using %d positive vectors",
-                      len([x for x in class_values if x == 1.0]))
-        logging.debug("Class values: %s", str(class_values))
-        positives = []
-        i = 0
-        while len(positives) < self.dimensions:
+    def learn_cone_gradient(self, vectors, class_values):
+        orig_dims = len(vectors[0])
+        estimate =  random.random_sample(orig_dims*self.dimensions)*2 - 1
+        estimate_shape = (self.dimensions, orig_dims) 
+        estimate = estimate.reshape(estimate_shape)
+        zero = np.zeros(self.dimensions)
+        for i in range(100):
             logging.debug("Iteration %d", i)
-            if i >= len(vectors):
-                raise ValueError("Not enough positive vectors for specified dimensions")
-            if class_values[i] == 1.0:
-                positives.append(vectors[i])
-            i += 1
-        logging.debug("Positives: %s", str(positives))
-        inverse = pinv(positives)
-        logging.debug("Inverse matrix: %s", str(inverse))
-        return inverse.T.reshape(len(vectors[0])*self.dimensions)
-
-    def learn_cone_descent_vectors(self, vectors, class_values):
-        initial = self.get_initial(vectors, class_values)
-        def fitness(vals):
-            matrix = vals.reshape( (self.dimensions, len(vectors[0])) )
-            truth_map = {True:1, False:0}
-            predictions = [truth_map[positive(matrix, v)]
-                           for v in vectors]
-            logging.debug("Fitness precision: %f recall: %f",
-                          precision_score(class_values, predictions),
-                          recall_score(class_values, predictions))
-            return f1_score(class_values, predictions)
-
-        best = initial
-        best_fitness = fitness(initial)
-        logging.debug("Initial fitness: %f", best_fitness)
-        accepts = 0
-        for i in xrange(1000):
-            #diff = 0.01*(random.random_sample(dimensions**2)*2. - 1.)
-            new = best.copy()
-            diff = (random.random_sample()*2. - 1.)
-            new[random.randint(self.dimensions*len(vectors[0]))] += diff
-            new_fitness = fitness(new) 
-            if new_fitness > best_fitness:
-                logging.debug("Found new best fitness: %f", new_fitness)
-                accepts += 1
-                best = new
-                best_fitness = new_fitness
-            if (accepts > 5*self.dimensions**2
-                or best_fitness > 0.95):
+            logging.debug("Estimate %s", str(estimate))
+            mapped = np.dot(estimate, vectors.T)
+            logging.debug("Mapped %s", str(mapped))
+            working = np.copy(mapped).T
+            for i in range(len(vectors)):
+                if class_values[i] == 1:
+                    # Vector in working should be positive
+                    working[i] = np.maximum(zero, working[i])
+                else:
+                    # Subtract from vector if necessary to make it non-positive
+                    m = min(working[i])
+                    if m > -0.1:
+                        working[i] = working[i] - (m + 0.1)
+            fixed = working.T
+            logging.debug("Fixed %s", str(fixed))
+            difference = np.dot(mapped, vectors) - np.dot(fixed, vectors)
+            size = np.sum(abs(difference))
+            logging.debug("Difference size: %f", size)
+            if size == 0.0:
                 break
-
-        logging.info("Best fitness: %f", best_fitness)
-        logging.info("Iterations: %d", i)
-        learnt = best.reshape( (self.dimensions, len(vectors[0])) )
-        return learnt
-
+            logging.debug("Difference %s", str(difference))
+            estimate = estimate - min(0.5, 25.0/size)*difference
+        return estimate

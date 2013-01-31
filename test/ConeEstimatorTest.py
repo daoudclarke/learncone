@@ -13,7 +13,7 @@ from sklearn.datasets import fetch_mldata
 
 from learncone import ConeEstimator
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import logging
 logging.basicConfig(filename='results/unittest.log',
@@ -41,23 +41,23 @@ class ConeEstimatorTestCase(unittest.TestCase):
         dataset = fetch_mldata('mnist-original')
         binary_map = np.vectorize(lambda x : 1 if x == 0 else 0)
         binary_target = binary_map(dataset.target)
-        print binary_target[:10]
         method = ShuffleSplit(len(dataset.data), n_iterations = 1, train_size = 300)
         start = datetime.now()
         result = cross_val_score(
-            ConeEstimator.ConeEstimatorTwoClass(5),
+            ConeEstimator.ConeEstimatorTwoClass(3),
             dataset.data,
             binary_target,
             cv = method,
             score_func = f1_score)
         time = datetime.now() - start
-        print result
-        print "Run time: ", time
+        self.assertGreater(result, 0.75, "F1 score should be above 75%")
+        self.assertLess(time, timedelta(seconds=3), "Should run in under three seconds")
 
     def runClassifier(self, data_dims, cone_dims, classifier):
         """Construct an artificial dataset and test we can learn it"""
         random.seed(1001)
-        cone =  random.random_sample(data_dims*cone_dims).reshape( (cone_dims, data_dims) )
+        rand_array =  random.random_sample(data_dims*cone_dims)*2 - 1
+        cone = rand_array.reshape( (cone_dims, data_dims) )
         data, class_values = self.generateTestData(cone, data_dims, cone_dims)
         method = ShuffleSplit(len(data), n_iterations = 1, train_size = 100)
         result = cross_val_score(
