@@ -71,32 +71,62 @@ class ConeEstimatorTwoClass(ConeEstimatorBase):
 
     def learn_cone_gradient(self, vectors, class_values):
         orig_dims = len(vectors[0])
-        estimate =  random.random_sample(orig_dims*self.dimensions)*2 - 1
+        estimate = random.random_sample(orig_dims*self.dimensions)*2 - 1
         estimate_shape = (self.dimensions, orig_dims) 
         estimate = estimate.reshape(estimate_shape)
-        zero = np.zeros(self.dimensions)
         for i in range(100):
             logging.debug("Iteration %d", i)
             logging.debug("Estimate %s", str(estimate))
-            mapped = np.dot(estimate, vectors.T)
-            logging.debug("Mapped %s", str(mapped))
-            working = np.copy(mapped).T
-            for i in range(len(vectors)):
-                if class_values[i] == 1:
-                    # Vector in working should be positive
-                    working[i] = np.maximum(zero, working[i])
-                else:
-                    # Subtract from vector if necessary to make it non-positive
-                    m = min(working[i])
-                    if m > -0.1:
-                        working[i] = working[i] - (m + 0.1)
-            fixed = working.T
-            logging.debug("Fixed %s", str(fixed))
-            difference = np.dot(mapped, vectors) - np.dot(fixed, vectors)
-            size = np.sum(abs(difference))
+            difference, size = self.get_difference(vectors, class_values, estimate)
             logging.debug("Difference size: %f", size)
             if size == 0.0:
                 break
             logging.debug("Difference %s", str(difference))
-            estimate = estimate - min(0.5, 25.0/size)*difference
+
+            scale = min(0.5, 10.0/size)            
+            estimate = estimate - scale*difference
+
+            #scale = 0.5
+            # new_size = size
+            # new_estimate = estimate
+            # while new_size >= size:
+            #     new_estimate = estimate - scale*difference
+            #     new_difference, new_size = self.get_difference(vectors, class_values, new_estimate)
+            #     logging.debug("New estimate, scale: %f, new size %f", scale, new_size)
+            #     scale = scale*0.5
+            # estimate = new_estimate
+
+            # if size < old_size:
+            #     logging.debug("New best size")
+            #     estimate = old_estimate - scale*difference
+            #     scale = initial_scale
+            #     old_size = size
+            #     old_difference = difference
+            #     old_estimate = estimate
+            # else:
+            #     scale *= 0.8
+            #     logging.debug("New scale: %f", scale)
+            #     estimate = old_estimate - scale*old_difference
         return estimate
+
+    def get_difference(self, vectors, class_values, estimate):
+        zero = np.zeros(self.dimensions)
+        mapped = np.dot(estimate, vectors.T)
+        logging.debug("Mapped %s", str(mapped))
+        working = np.copy(mapped).T
+        for i in range(len(vectors)):
+            if class_values[i] == 1:
+                # Vector in working should be positive
+                working[i] = np.maximum(zero, working[i])
+            else:
+                # Subtract from vector if necessary to make it non-positive
+                m = min(working[i])
+                if m > -0.1:
+                    index = np.argmin(working[i])
+                    working[i][index] = -0.1
+                    #working[i] = working[i] - (m + 0.1)
+        fixed = working.T
+        logging.debug("Fixed %s", str(fixed))
+        difference = np.dot(mapped, vectors) - np.dot(fixed, vectors)
+        size = np.sum(abs(difference))
+        return difference, size

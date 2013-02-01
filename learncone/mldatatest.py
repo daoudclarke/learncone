@@ -22,11 +22,11 @@ def run():
     logging.info("Starting test")
     # cone_pipeline = Pipeline([('feature selection', SelectKBest(k=100)),
     #                           ('classification', ConeEstimator())])
-    cone_pipeline = Pipeline([('random PCA', RandomizedPCA(n_components=50)),
-                              ('classification', ConeEstimator())])
+    # cone_pipeline = Pipeline([('random PCA', RandomizedPCA(n_components=50)),
+    #                           ('classification', ConeEstimator(3))])
     classifiers = [DecisionTreeClassifier(),
                    MultinomialNB(),
-        ConeEstimator()]
+                   ConeEstimator(10)]
         #cone_pipeline]
 
     dataset = fetch_mldata('mnist-original')
@@ -44,11 +44,12 @@ def run():
     logging.info("Test complete")
 
 if __name__ == "__main__":
-    logging.basicConfig(filename='results/mldatatest.log',
+    logging.basicConfig(filename='../results/mldatatest.log',
                         level=logging.DEBUG,
                         format='%(asctime)s %(levelname)s %(message)s')
     try:
-        profile.run("run()")
+        #profile.run("run()")
+        run()
     except:
         logging.exception("Exception on test run - aborting")
         raise

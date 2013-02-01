@@ -44,14 +44,14 @@ class ConeEstimatorTestCase(unittest.TestCase):
         method = ShuffleSplit(len(dataset.data), n_iterations = 1, train_size = 300)
         start = datetime.now()
         result = cross_val_score(
-            ConeEstimator.ConeEstimatorTwoClass(3),
+            ConeEstimator.ConeEstimatorTwoClass(2),
             dataset.data,
             binary_target,
             cv = method,
             score_func = f1_score)
         time = datetime.now() - start
-        self.assertGreater(result, 0.75, "F1 score should be above 75%")
-        self.assertLess(time, timedelta(seconds=3), "Should run in under three seconds")
+        self.assertGreater(result, 0.6)
+        self.assertLess(time, timedelta(seconds=3))
 
     def runClassifier(self, data_dims, cone_dims, classifier):
         """Construct an artificial dataset and test we can learn it"""
