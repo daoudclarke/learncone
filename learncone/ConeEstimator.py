@@ -50,7 +50,7 @@ class ConeEstimatorTwoClass(ConeEstimatorBase):
         if self.dimensions < 1:
             raise ValueError("Need at least one dimension to fit data.")
         logging.info("Starting cone learning from %d data points", len(data))
-        self.model = self.learn_cone_gradient(
+        self.model = self.learn_cone_factorise(
             data, class_values)
         predictions = self.predict(data)
         logging.info("Training set precision: %f recall: %f f1: %f",
@@ -68,6 +68,77 @@ class ConeEstimatorTwoClass(ConeEstimatorBase):
         decisions = [min(np.dot(self.model, x)) + 1e-10 for x in data]
         logging.debug("First 100 decision values: %s", str(decisions[:100]))
         return decisions
+
+    def learn_cone_factorise(self, vectors, class_values):
+        # Factorise vectors = V into V ~= WH, minimise ||W - VH||
+        orig_dims = len(vectors[0])
+        num_docs = len(vectors)
+        V = vectors.T
+        
+        # NB These are POSITIVE
+        W = random.random_sample(orig_dims*self.dimensions)*2 - 1
+        W = W.reshape( (orig_dims, self.dimensions) )
+
+        H = random.random_sample(self.dimensions*num_docs)*2 - 1
+        H = H.reshape( (self.dimensions, num_docs) )
+
+        mu_w = 1
+        mu_h = 1
+
+        objectives = []
+        for i in range(50):
+            logging.debug("Iteration %d", i)
+            new_obj = obj = np.linalg.norm(V - np.dot(W, H))
+            
+            # If the objective hasn't decreased much recently, stop
+            if i > 3 and (sum(objectives)/len(objectives) - new_obj)/new_obj < 1e-5:
+                logging.info("Objective stopped decreasing at: %f", new_obj)
+                return W.T
+            objectives.append(new_obj)
+            objectives = objectives[-5:]
+            while True:
+                logging.debug("Objective: %f, mu_w: %f", new_obj, mu_w)
+                W_new = W - mu_w*np.dot(np.dot(W,H) - V, H.T) 
+                new_obj = np.linalg.norm(V - np.dot(W_new, H))
+                if new_obj < obj:
+                    break
+                mu_w *= 0.5
+                if mu_w <= 1e-200:
+                    logging.info("Convergence at objective: %f", new_obj)
+                    return W.T
+            W = W_new
+            mu_w *= 1.2
+            logging.debug("Better W found at obj: %f", new_obj)
+
+            obj = new_obj
+            while True:
+                logging.debug("Objective: %f, mu_h: %f", new_obj, mu_h)
+                H_new = H - mu_h*np.dot(W.T, np.dot(W,H) - V)
+                new_obj = np.linalg.norm(V - np.dot(W, H_new))
+                if new_obj < obj:
+                    break
+                mu_h *= 0.5
+                if mu_h <= 1e-200:
+                    logging.info("Convergence at objective: %f", new_obj)
+                    return W.T
+            H = H_new
+            mu_h *= 1.2
+            logging.debug("Better H found at obj: %f", new_obj)
+        return W.T
+                   
+        
+        # for i in range(10):
+        #     H = np.divide(np.multiply(
+        #             H, np.dot(W.T, V),
+        #             np.dot(W.T, np.dot(W, H))))
+        #     logging.debug("H: %s", str(H))
+        #     W = np.multiply(
+        #         W, np.divide(np.dot(V, H.T),
+        #                      np.dot(np.dot(W, H), H.T)))
+        #     logging.debug("W: %s", str(W))
+        #     size = np.linalg.norm(V - np.dot(W, H))
+        #     logging.debug("Distance: %f", size)
+        # return W.T
 
     def learn_cone_gradient(self, vectors, class_values):
         orig_dims = len(vectors[0])

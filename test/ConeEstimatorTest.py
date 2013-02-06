@@ -44,7 +44,7 @@ class ConeEstimatorTestCase(unittest.TestCase):
         method = ShuffleSplit(len(dataset.data), n_iterations = 1, train_size = 300)
         start = datetime.now()
         result = cross_val_score(
-            ConeEstimator.ConeEstimatorTwoClass(2),
+            ConeEstimator.ConeEstimatorTwoClass(5),
             dataset.data,
             binary_target,
             cv = method,
