@@ -26,7 +26,7 @@ class ConeEstimatorTestCase(unittest.TestCase):
         cone_dims = 3
         classifier = ConeEstimator.ConeEstimatorTwoClass(cone_dims)
         result = self.runClassifier(data_dims, cone_dims, classifier)
-        self.assertGreater(result, 0.9, "F1 score should be above 90%")
+        self.assertGreater(result, 0.9)
 
     @unittest.skip("There is a problem with OneVsRest classifier "
                    + "that means it doesn't work with binary classes")
@@ -44,7 +44,7 @@ class ConeEstimatorTestCase(unittest.TestCase):
         method = ShuffleSplit(len(dataset.data), n_iterations = 1, train_size = 300)
         start = datetime.now()
         result = cross_val_score(
-            ConeEstimator.ConeEstimatorTwoClass(5),
+            ConeEstimator.ConeEstimatorTwoClass(50),
             dataset.data,
             binary_target,
             cv = method,

@@ -75,7 +75,6 @@ class ConeEstimatorTwoClass(ConeEstimatorBase):
         num_docs = len(vectors)
         V = vectors.T
         
-        # NB These are POSITIVE
         W = random.random_sample(orig_dims*self.dimensions)*2 - 1
         W = W.reshape( (orig_dims, self.dimensions) )
 
@@ -86,14 +85,14 @@ class ConeEstimatorTwoClass(ConeEstimatorBase):
         mu_h = 1
 
         objectives = []
-        for i in range(50):
+        for i in range(100):
             logging.debug("Iteration %d", i)
             new_obj = obj = np.linalg.norm(V - np.dot(W, H))
             
             # If the objective hasn't decreased much recently, stop
             if i > 3 and (sum(objectives)/len(objectives) - new_obj)/new_obj < 1e-5:
                 logging.info("Objective stopped decreasing at: %f", new_obj)
-                return W.T
+                return pinv(W)
             objectives.append(new_obj)
             objectives = objectives[-5:]
             while True:
@@ -105,7 +104,7 @@ class ConeEstimatorTwoClass(ConeEstimatorBase):
                 mu_w *= 0.5
                 if mu_w <= 1e-200:
                     logging.info("Convergence at objective: %f", new_obj)
-                    return W.T
+                    return pinv(W)
             W = W_new
             mu_w *= 1.2
             logging.debug("Better W found at obj: %f", new_obj)
@@ -114,17 +113,21 @@ class ConeEstimatorTwoClass(ConeEstimatorBase):
             while True:
                 logging.debug("Objective: %f, mu_h: %f", new_obj, mu_h)
                 H_new = H - mu_h*np.dot(W.T, np.dot(W,H) - V)
-                new_obj = np.linalg.norm(V - np.dot(W, H_new))
+                # Make compatible with classifications
+                #logging.debug("Before project: %s", str(H_new))
+                H_new = self.project(H_new.T, class_values).T
+                #logging.debug("After project: %s", str(H_new))
+                new_obj = np.linalg.norm(V - np.dot(W, H_new))                
                 if new_obj < obj:
                     break
                 mu_h *= 0.5
                 if mu_h <= 1e-200:
                     logging.info("Convergence at objective: %f", new_obj)
-                    return W.T
+                    return pinv(W)
             H = H_new
             mu_h *= 1.2
             logging.debug("Better H found at obj: %f", new_obj)
-        return W.T
+        return pinv(W)
                    
         
         # for i in range(10):
@@ -180,12 +183,10 @@ class ConeEstimatorTwoClass(ConeEstimatorBase):
             #     estimate = old_estimate - scale*old_difference
         return estimate
 
-    def get_difference(self, vectors, class_values, estimate):
+    def project(self, vectors, class_values):
+        working = np.copy(vectors)
         zero = np.zeros(self.dimensions)
-        mapped = np.dot(estimate, vectors.T)
-        logging.debug("Mapped %s", str(mapped))
-        working = np.copy(mapped).T
-        for i in range(len(vectors)):
+        for i in range(len(class_values)):
             if class_values[i] == 1:
                 # Vector in working should be positive
                 working[i] = np.maximum(zero, working[i])
@@ -196,7 +197,12 @@ class ConeEstimatorTwoClass(ConeEstimatorBase):
                     index = np.argmin(working[i])
                     working[i][index] = -0.1
                     #working[i] = working[i] - (m + 0.1)
-        fixed = working.T
+        return working
+
+    def get_difference(self, vectors, class_values, estimate):
+        mapped = np.dot(estimate, vectors.T)
+        logging.debug("Mapped %s", str(mapped))
+        fixed = self.project(mapped.T, class_values).T
         logging.debug("Fixed %s", str(fixed))
         difference = np.dot(mapped, vectors) - np.dot(fixed, vectors)
         size = np.sum(abs(difference))
