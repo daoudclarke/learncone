@@ -26,6 +26,7 @@ class ConeEstimatorTestCase(unittest.TestCase):
         cone_dims = 3
         classifier = ConeEstimator.ConeEstimatorTwoClass(cone_dims)
         result = self.runClassifier(data_dims, cone_dims, classifier)
+        print "Artificial dataset F1:", result
         self.assertGreater(result, 0.9, "F1 score should be above 90%")
 
     @unittest.skip("There is a problem with OneVsRest classifier "
@@ -49,6 +50,7 @@ class ConeEstimatorTestCase(unittest.TestCase):
             binary_target,
             cv = method,
             score_func = f1_score)
+        print "MNIST dataset F1:", result
         time = datetime.now() - start
         self.assertGreater(result, 0.6)
         self.assertLess(time, timedelta(seconds=3))
