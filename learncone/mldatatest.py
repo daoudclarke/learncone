@@ -5,6 +5,7 @@ from ConeEstimator import ConeEstimator
 # Classifiers
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.svm import LinearSVC
 
 from sklearn.pipeline import Pipeline
 #from sklearn.feature_selection import SelectKBest, chi2
@@ -26,6 +27,7 @@ def run():
     #                           ('classification', ConeEstimator(3))])
     classifiers = [DecisionTreeClassifier(),
                    MultinomialNB(),
+                   LinearSVC(),
                    ConeEstimator(10)]
         #cone_pipeline]
 
