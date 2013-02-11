@@ -44,11 +44,12 @@ class ConeEstimatorTestCase(unittest.TestCase):
         method = ShuffleSplit(len(dataset.data), n_iterations = 1, train_size = 300)
         start = datetime.now()
         result = cross_val_score(
-            ConeEstimator.ConeEstimatorTwoClass(50),
+            ConeEstimator.ConeEstimatorTwoClass(3),
             dataset.data,
             binary_target,
             cv = method,
             score_func = f1_score)
+        print "MNIST F1: ", result
         time = datetime.now() - start
         self.assertGreater(result, 0.6)
         self.assertLess(time, timedelta(seconds=3))

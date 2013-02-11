@@ -85,7 +85,7 @@ class ConeEstimatorTwoClass(ConeEstimatorBase):
         mu_h = 1
 
         objectives = []
-        for i in range(100):
+        for i in range(500):
             logging.debug("Iteration %d", i)
             new_obj = obj = np.linalg.norm(V - np.dot(W, H))
             
