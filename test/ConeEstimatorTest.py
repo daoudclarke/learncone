@@ -22,6 +22,7 @@ logging.basicConfig(filename='results/unittest.log',
 
 class ConeEstimatorTestCase(unittest.TestCase):
     def setUp(self):
+        logging.info("Starting test: %s", self._testMethodName)
         random.seed(1001)
     
     def testArtificialDatasetTwoClass(self):
@@ -29,7 +30,7 @@ class ConeEstimatorTestCase(unittest.TestCase):
         cone_dims = 3
         classifier = ConeEstimator.ConeEstimatorTwoClass(cone_dims)
         result = self.runClassifier(data_dims, cone_dims, classifier)
-        self.assertGreater(result, 0.9)
+        self.assertGreater(min(result), 0.9)
 
     @unittest.skip("There is a problem with OneVsRest classifier "
                    + "that means it doesn't work with binary classes")
@@ -55,14 +56,16 @@ class ConeEstimatorTestCase(unittest.TestCase):
         print "MNIST F1: ", result
         time = datetime.now() - start
         self.assertGreater(result, 0.6)
-        self.assertLess(time, timedelta(seconds=3))
+        self.assertLess(time, timedelta(seconds=15))
 
     def runClassifier(self, data_dims, cone_dims, classifier):
         """Construct an artificial dataset and test we can learn it"""
         rand_array =  random.random_sample(data_dims*cone_dims)*2 - 1
+        logging.info("Generating %d dimensional cone in %d dimensions", cone_dims, data_dims)
         cone = rand_array.reshape( (cone_dims, data_dims) )
         data, class_values = self.generateTestData(cone, data_dims, cone_dims)
-        method = ShuffleSplit(len(data), n_iterations = 1, train_size = 100)
+        logging.info("Generated %d test data instances", len(class_values))
+        method = ShuffleSplit(len(class_values), n_iterations = 3, train_size = 500, test_size = 500)
         result = cross_val_score(
             classifier, data,
             class_values,
