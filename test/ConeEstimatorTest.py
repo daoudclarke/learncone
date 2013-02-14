@@ -21,6 +21,9 @@ logging.basicConfig(filename='results/unittest.log',
                     format='%(asctime)s %(levelname)s %(message)s')
 
 class ConeEstimatorTestCase(unittest.TestCase):
+    def setUp(self):
+        random.seed(1001)
+    
     def testArtificialDatasetTwoClass(self):
         data_dims = 10
         cone_dims = 3
@@ -39,9 +42,10 @@ class ConeEstimatorTestCase(unittest.TestCase):
 
     def testMnistDataset(self):
         dataset = fetch_mldata('mnist-original')
+
         binary_map = np.vectorize(lambda x : 1 if x == 0 else 0)
-        binary_target = binary_map(dataset.target)
-        method = ShuffleSplit(len(dataset.data), n_iterations = 1, train_size = 300)
+        binary_target = binary_map(dataset.target) # binary_map(subsample_target)
+        method = ShuffleSplit(len(dataset.target), n_iterations = 1, train_size = 300, test_size = 500)
         start = datetime.now()
         result = cross_val_score(
             ConeEstimator.ConeEstimatorTwoClass(3),
@@ -56,7 +60,6 @@ class ConeEstimatorTestCase(unittest.TestCase):
 
     def runClassifier(self, data_dims, cone_dims, classifier):
         """Construct an artificial dataset and test we can learn it"""
-        random.seed(1001)
         rand_array =  random.random_sample(data_dims*cone_dims)*2 - 1
         cone = rand_array.reshape( (cone_dims, data_dims) )
         data, class_values = self.generateTestData(cone, data_dims, cone_dims)
