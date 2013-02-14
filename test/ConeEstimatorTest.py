@@ -42,9 +42,8 @@ class ConeEstimatorTestCase(unittest.TestCase):
 
     def testMnistDataset(self):
         dataset = fetch_mldata('mnist-original')
-
         binary_map = np.vectorize(lambda x : 1 if x == 0 else 0)
-        binary_target = binary_map(dataset.target) # binary_map(subsample_target)
+        binary_target = binary_map(dataset.target)
         method = ShuffleSplit(len(dataset.target), n_iterations = 1, train_size = 300, test_size = 500)
         start = datetime.now()
         result = cross_val_score(

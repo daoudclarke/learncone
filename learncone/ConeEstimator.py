@@ -62,10 +62,19 @@ class ConeEstimatorTwoClass(ConeEstimatorBase):
         return [1 if x > 0 else 0
                 for x in self.decision_function(data)]
 
-    def decision_function(self, data):        
-        num_docs = len(data)
-        logging.info("Predicting %d values", num_docs)
 
+
+    def decision_function(self, data):        
+        logging.info("Predicting %d values", len(data))
+        H = self.get_decision_H(data)
+
+        # Add a small constant to allow for rounding errors
+        decisions = [min(x) + 1e-10 for x in H.T]
+        logging.debug("First 100 decision values: %s", str(decisions[:100]))
+        return decisions
+
+    def get_decision_H(self, data):
+        num_docs = len(data)
         V = data.T
         H = random.random_sample(self.dimensions*num_docs)*2 - 1
         H = H.reshape( (self.dimensions, num_docs) )
@@ -78,21 +87,18 @@ class ConeEstimatorTwoClass(ConeEstimatorBase):
                 new_obj = np.linalg.norm(V - np.dot(self.W, H_new))                
                 logging.debug("Objective: %f, mu_h: %f", new_obj, mu_h)
                 if new_obj < best_obj:
+                    if (best_obj - new_obj)/new_obj < 1e-8:
+                        logging.info("Objective stopped decreasing at: %f", new_obj)
+                        return H_new
                     H = H_new
                     best_obj = new_obj
                     break
                 mu_h *= 0.5
                 if mu_h <= 1e-200:
                     logging.info("Convergence at objective: %f", new_obj)
-                    break
-            if mu_h <= 1e-200:
-                break
+                    return H
             mu_h *= 1.2
 
-        # Add a small constant to allow for rounding errors
-        decisions = [min(x) + 1e-10 for x in H.T]
-        logging.debug("First 100 decision values: %s", str(decisions[:100]))
-        return decisions
 
     def learn_cone_factorise(self, vectors, class_values):
         # Factorise vectors = V into V ~= WH, minimise ||W - VH||
