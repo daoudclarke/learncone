@@ -34,7 +34,7 @@ def run():
     print "Features: ", len(dataset.data[0])
 
     for classifier in classifiers:
-        method = ShuffleSplit(len(dataset.data), n_iterations = 1, train_size = 1000)
+        method = ShuffleSplit(len(dataset.data), n_iterations = 1, train_size = 2000, test_size = 1000)
         result = cross_val_score(
             classifier, dataset.data,
             dataset.target,
