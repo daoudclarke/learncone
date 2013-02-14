@@ -11,7 +11,9 @@ from sklearn.metrics import fbeta_score, f1_score, precision_score, recall_score
 from sklearn import preprocessing
 from sklearn.datasets import fetch_mldata
 
-from learncone import ConeEstimator
+from learncone.ConeEstimatorGradient import ConeEstimatorGradient
+from learncone.ConeEstimatorFactorise import ConeEstimatorFactorise
+from learncone.ConeEstimatorBase import positive
 
 from datetime import datetime, timedelta
 
@@ -25,40 +27,41 @@ class ConeEstimatorTestCase(unittest.TestCase):
         logging.info("Starting test: %s", self._testMethodName)
         random.seed(1001)
     
-    def testArtificialDatasetTwoClass(self):
-        data_dims = 10
-        cone_dims = 3
-        classifier = ConeEstimator.ConeEstimatorTwoClass(cone_dims)
-        result = self.runClassifier(data_dims, cone_dims, classifier)
+    def testConeEstimatorFactoriseArtificialData(self):
+        result = self.runArtificial(10, 3, ConeEstimatorFactorise(3))
         self.assertGreater(min(result), 0.9)
 
-    @unittest.skip("There is a problem with OneVsRest classifier "
-                   + "that means it doesn't work with binary classes")
-    def testArtificialDatasetMultiClass(self):
-        data_dims = 10
-        cone_dims = 3
-        classifier = ConeEstimator.ConeEstimator(cone_dims)
-        result = self.runClassifier(data_dims, cone_dims, classifier)
-        print result
+    def testConeEstimatorGradientArtificialData(self):
+        result = self.runArtificial(10, 3, ConeEstimatorGradient(3))
+        self.assertGreater(min(result), 0.9)
 
-    def testMnistDataset(self):
+    def testConeEstimatorFactoriseMnistDataset(self):
+        result, time = self.runMnistDataset(ConeEstimatorFactorise(3))
+        self.assertGreater(result, 0.6)
+        self.assertLess(time, timedelta(seconds=15))
+
+    def testConeEstimatorGradientMnistDataset(self):
+        result, time = self.runMnistDataset(ConeEstimatorGradient(3))
+        self.assertGreater(result, 0.6)
+        self.assertLess(time, timedelta(seconds=3))
+
+    def runMnistDataset(self, classifier):
         dataset = fetch_mldata('mnist-original')
         binary_map = np.vectorize(lambda x : 1 if x == 0 else 0)
         binary_target = binary_map(dataset.target)
         method = ShuffleSplit(len(dataset.target), n_iterations = 1, train_size = 300, test_size = 500)
         start = datetime.now()
         result = cross_val_score(
-            ConeEstimator.ConeEstimatorTwoClass(3),
+            classifier,
             dataset.data,
             binary_target,
             cv = method,
             score_func = f1_score)
         print "MNIST F1: ", result
         time = datetime.now() - start
-        self.assertGreater(result, 0.6)
-        self.assertLess(time, timedelta(seconds=15))
+        return result, time
 
-    def runClassifier(self, data_dims, cone_dims, classifier):
+    def runArtificial(self, data_dims, cone_dims, classifier):
         """Construct an artificial dataset and test we can learn it"""
         rand_array =  random.random_sample(data_dims*cone_dims)*2 - 1
         logging.info("Generating %d dimensional cone in %d dimensions", cone_dims, data_dims)
@@ -85,7 +88,7 @@ class ConeEstimatorTestCase(unittest.TestCase):
             else:
                 v = random.random_sample(data_dims)*2 - 1.0
             data.append(v)
-            if ConeEstimator.positive(cone, v):
+            if positive(cone, v):
                 class_values.append(1)
             else:
                 class_values.append(0)
