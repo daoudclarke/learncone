@@ -45,6 +45,11 @@ class ConeEstimatorTestCase(unittest.TestCase):
         self.assertGreater(result, 0.6)
         self.assertLess(time, timedelta(seconds=3))
 
+    def testConeEstimatorUnusualClassValues(self):
+        result = self.runArtificial(10, 3, ConeEstimatorFactorise(3),
+                                    generator = self.generateMappedTestData)
+        self.assertGreater(min(result), 0.9)
+
     def runMnistDataset(self, classifier):
         dataset = fetch_mldata('mnist-original')
         binary_map = np.vectorize(lambda x : 1 if x == 0 else 0)
@@ -61,19 +66,23 @@ class ConeEstimatorTestCase(unittest.TestCase):
         time = datetime.now() - start
         return result, time
 
-    def runArtificial(self, data_dims, cone_dims, classifier):
+    def runArtificial(self, data_dims, cone_dims, classifier,
+                      generator = None):
         """Construct an artificial dataset and test we can learn it"""
+        if generator is None:
+            generator = self.generateTestData
         rand_array =  random.random_sample(data_dims*cone_dims)*2 - 1
         logging.info("Generating %d dimensional cone in %d dimensions", cone_dims, data_dims)
         cone = rand_array.reshape( (cone_dims, data_dims) )
-        data, class_values = self.generateTestData(cone, data_dims, cone_dims)
+        data, class_values = generator(cone, data_dims, cone_dims)
         logging.info("Generated %d test data instances", len(class_values))
         method = ShuffleSplit(len(class_values), n_iterations = 3, train_size = 500, test_size = 500)
+        positive = max(class_values)
         result = cross_val_score(
             classifier, data,
             class_values,
             cv = method,
-            score_func = f1_score)
+            score_func = lambda x,y: f1_score(x,y, pos_label = positive))
         return result
 
     def generateTestData(self, cone, data_dims, cone_dims):
@@ -94,7 +103,12 @@ class ConeEstimatorTestCase(unittest.TestCase):
                 class_values.append(0)
         return data, class_values
 
-        
+    def generateMappedTestData(self, cone, data_dims, cone_dims):
+        data, class_values = self.generateTestData(cone, data_dims, cone_dims)
+        m = {0: -1, 1: 7}
+        class_values = [m[x] for x in class_values]
+        return data, class_values
+
         # docs = []
         # class_values = []
         # zero = np.zeros(lattice.dimensions)

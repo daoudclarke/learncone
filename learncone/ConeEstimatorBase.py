@@ -5,6 +5,7 @@ import logging
 from sklearn.base import BaseEstimator
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn import preprocessing
 
 import numpy as np
 from numpy import random
@@ -33,7 +34,9 @@ class ConeEstimatorBase(BaseEstimator):
             self.dimensions = params['dimensions']
         return self
 
-    def fit(self, data, class_values):
+    def fit(self, data, input_class_values):
+        self.encoder = preprocessing.LabelEncoder()
+        class_values = self.encoder.fit_transform(input_class_values)
         if self.dimensions < 1:
             raise ValueError("Need at least one dimension to fit data.")
         logging.info("Starting cone learning from %d data points", len(data))
@@ -45,8 +48,9 @@ class ConeEstimatorBase(BaseEstimator):
                       f1_score(class_values, predictions))
     
     def predict(self, data):
-        return [1 if x > 0 else 0
-                for x in self.decision_function(data)]
+        results = [1 if x > 0 else 0
+                   for x in self.decision_function(data)]
+        return self.encoder.inverse_transform(results)
 
     def project(self, vectors, class_values):
         working = np.copy(vectors)
