@@ -14,6 +14,7 @@ from sklearn.datasets import fetch_mldata
 from learncone.ConeEstimatorGradient import ConeEstimatorGradient
 from learncone.ConeEstimatorFactorise import ConeEstimatorFactorise
 from learncone.ConeEstimatorBase import positive
+from learncone.ConeEstimator import ConeEstimator
 
 from datetime import datetime, timedelta
 
@@ -49,6 +50,15 @@ class ConeEstimatorTestCase(unittest.TestCase):
         result = self.runArtificial(10, 3, ConeEstimatorFactorise(3),
                                     generator = self.generateMappedTestData)
         self.assertGreater(min(result), 0.9)
+
+    def testConeEstimatorArtificialData(self):
+        result = self.runArtificial(10, 3, ConeEstimator(3))
+        self.assertGreater(min(result), 0.9)
+
+    def testConeEstimatorMultiClassValues(self):
+        result = self.runArtificial(10, 3, ConeEstimator(3),
+                                    generator = self.generateMultiClassTestData)
+        self.assertGreater(min(result), 0.7)
 
     def runMnistDataset(self, classifier):
         dataset = fetch_mldata('mnist-original')
@@ -107,6 +117,12 @@ class ConeEstimatorTestCase(unittest.TestCase):
         data, class_values = self.generateTestData(cone, data_dims, cone_dims)
         m = {0: -1, 1: 7}
         class_values = [m[x] for x in class_values]
+        return data, class_values
+
+    def generateMultiClassTestData(self, cone, data_dims, cone_dims):
+        data, class_values = self.generateTestData(cone, data_dims, cone_dims)
+        m = {0: lambda: random.randint(-2,0), 1: lambda: 1}
+        class_values = [m[x]() for x in class_values]
         return data, class_values
 
         # docs = []

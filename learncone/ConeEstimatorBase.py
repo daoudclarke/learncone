@@ -16,7 +16,7 @@ def positive(m, v):
     return (product >= -1e-10).all()
 
 class ConeEstimatorBase(BaseEstimator):
-    def __init__(self, dimensions):
+    def __init__(self, dimensions=1):
         if dimensions < 1:
             raise ValueError("Need at least one dimension to fit data.")
         self.dimensions = dimensions
@@ -39,7 +39,8 @@ class ConeEstimatorBase(BaseEstimator):
         class_values = self.encoder.fit_transform(input_class_values)
         if self.dimensions < 1:
             raise ValueError("Need at least one dimension to fit data.")
-        logging.info("Starting cone learning from %d data points", len(data))
+        logging.info("Starting cone learning from %d data points in %d dimensions",
+                     len(data), self.dimensions)
         self.learn_cone(data, class_values)
         predictions = self.predict(data)
         logging.info("Training set precision: %f recall: %f f1: %f",

@@ -4,3 +4,5 @@
 *.png
 results
 build
+dist/
+learncone.egg-info/
