@@ -15,6 +15,7 @@ from learncone.ConeEstimatorGradient import ConeEstimatorGradient
 from learncone.ConeEstimatorFactorise import ConeEstimatorFactorise
 from learncone.ConeEstimatorBase import positive
 from learncone.ConeEstimator import ConeEstimator
+from learncone.ArtificialData import make_data
 
 from datetime import datetime, timedelta
 
@@ -96,22 +97,8 @@ class ConeEstimatorTestCase(unittest.TestCase):
         return result
 
     def generateTestData(self, cone, data_dims, cone_dims):
-        data = []
-        class_values = []
-        cone_inv = pinv(cone)
-        for i in xrange(3000):
-            # Generate positive data half the time
-            if random.random_sample() > 0.5:
-                v = random.random_sample(cone_dims)
-                v = np.array(np.dot(cone_inv, v))
-            else:
-                v = random.random_sample(data_dims)*2 - 1.0
-            data.append(v)
-            if positive(cone, v):
-                class_values.append(1)
-            else:
-                class_values.append(0)
-        return data, class_values
+        dataset = make_data(data_dims, cone_dims)
+        return dataset.data, dataset.target
 
     def generateMappedTestData(self, cone, data_dims, cone_dims):
         data, class_values = self.generateTestData(cone, data_dims, cone_dims)
