@@ -36,8 +36,10 @@ class ArtificialData:
                 self.target.append(1)
             else:
                 self.target.append(0)
+        self.data = np.array(self.data)
+        self.target = np.array(self.target)
 
-def make_data(data_dims, cone_dims):
-    data = ArtificialData(data_dims, cone_dims)
+def make_data(data_dims, cone_dims, size=3000):
+    data = ArtificialData(data_dims, cone_dims, size)
     data.generate()
     return data
