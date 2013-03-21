@@ -26,7 +26,8 @@ class ConeEstimatorGradient(ConeEstimatorBase):
         estimate = random.random_sample(orig_dims*self.dimensions)*2 - 1
         estimate_shape = (self.dimensions, orig_dims) 
         estimate = estimate.reshape(estimate_shape)
-        for i in range(100):
+        scale = None
+        for i in range(300):
             logging.debug("Iteration %d", i)
             logging.debug("Estimate %s", str(estimate))
             difference, size = self.get_difference(vectors, class_values, estimate)
@@ -35,8 +36,25 @@ class ConeEstimatorGradient(ConeEstimatorBase):
                 break
             logging.debug("Difference %s", str(difference))
 
-            scale = min(0.5, 10.0/size)            
-            estimate = estimate - scale*difference
+            if scale is None:
+                scale = min(0.5, 10.0/size)
+            logging.debug("Finding correct scale factor")    
+            while True:
+                new_estimate = estimate - scale*difference
+                difference, new_size = self.get_difference(vectors, class_values, new_estimate)
+                logging.debug("Size at scale factor %g: %f", scale, new_size)
+                if new_size < size:
+                    logging.debug("Found better size: %f", new_size)
+                    break
+                scale *= 0.5
+                if scale < 1e-100:
+                    logging.debug("Converged at iteration: %d", i)
+                    self.model = estimate
+                    return
+
+            estimate = new_estimate
+            scale *= 1.2
+            logging.debug("Increasing scale to %g", scale)
         self.model = estimate
 
     def get_difference(self, vectors, class_values, estimate):

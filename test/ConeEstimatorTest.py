@@ -9,7 +9,7 @@ from numpy.linalg import pinv
 from sklearn.cross_validation import ShuffleSplit, cross_val_score
 from sklearn.metrics import fbeta_score, f1_score, precision_score, recall_score
 from sklearn import preprocessing
-from sklearn.datasets import fetch_mldata
+from sklearn.datasets import fetch_mldata, load_svmlight_file
 
 from learncone.ConeEstimatorGradient import ConeEstimatorGradient
 from learncone.ConeEstimatorFactorise import ConeEstimatorFactorise
@@ -23,6 +23,11 @@ import logging
 logging.basicConfig(filename='results/unittest.log',
                     level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(message)s')
+
+class SvmLightDataset:
+    def __init__(self, data, target):
+        self.data = data.todense()
+        self.target = target
 
 class ConeEstimatorTestCase(unittest.TestCase):
     def setUp(self):
@@ -61,9 +66,19 @@ class ConeEstimatorTestCase(unittest.TestCase):
                                     generator = self.generateMultiClassTestData)
         self.assertGreater(min(result), 0.7)
 
+    def testConeEstimatorWordNetDataset(self):
+        data = SvmLightDataset(*load_svmlight_file(
+            'data/wn-noun-dependencies-10.mat'))
+        result, time = self.runDataset(
+            ConeEstimator(3), data)
+        self.assertGreater(min(result), 0.6)
+
     def runMnistDataset(self, classifier):
         dataset = fetch_mldata('mnist-original')
-        binary_map = np.vectorize(lambda x : 1 if x == 0 else 0)
+        return self.runDataset(classifier, dataset)
+
+    def runDataset(self, classifier, dataset):
+        binary_map = np.vectorize(lambda x : 1 if x == 1 else 0)
         binary_target = binary_map(dataset.target)
         method = ShuffleSplit(len(dataset.target), n_iterations = 1, train_size = 300, test_size = 500)
         start = datetime.now()
@@ -73,7 +88,7 @@ class ConeEstimatorTestCase(unittest.TestCase):
             binary_target,
             cv = method,
             score_func = f1_score)
-        logging.info("Classifier: %s, MNIST dataset F1: %f", str(classifier), result)
+        logging.info("Classifier: %s, dataset F1: %f", str(classifier), result)
         time = datetime.now() - start
         return result, time
 
