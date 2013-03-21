@@ -103,13 +103,13 @@ class ConeEstimatorTestCase(unittest.TestCase):
     def generateMappedTestData(self, cone, data_dims, cone_dims):
         data, class_values = self.generateTestData(cone, data_dims, cone_dims)
         m = {0: -1, 1: 7}
-        class_values = [m[x] for x in class_values]
+        class_values = np.array([m[x] for x in class_values])
         return data, class_values
 
     def generateMultiClassTestData(self, cone, data_dims, cone_dims):
         data, class_values = self.generateTestData(cone, data_dims, cone_dims)
         m = {0: lambda: random.randint(-2,0), 1: lambda: 1}
-        class_values = [m[x]() for x in class_values]
+        class_values = np.array([m[x]() for x in class_values])
         return data, class_values
 
         # docs = []
