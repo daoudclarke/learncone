@@ -13,6 +13,7 @@ from sklearn.datasets import fetch_mldata, load_svmlight_file
 
 from learncone.ConeEstimatorGradient import ConeEstimatorGradient
 from learncone.ConeEstimatorFactorise import ConeEstimatorFactorise
+from learncone.ConeEstimatorGreedy import ConeEstimatorGreedy
 from learncone.ConeEstimatorBase import positive
 from learncone.ConeEstimator import ConeEstimator
 from learncone.ArtificialData import make_data
@@ -42,15 +43,19 @@ class ConeEstimatorTestCase(unittest.TestCase):
         result = self.runArtificial(10, 3, ConeEstimatorGradient(3))
         self.assertGreater(min(result), 0.9)
 
+    def testConeEstimatorGreedyArtificialData(self):
+        result = self.runArtificial(10, 3, ConeEstimatorGreedy(3))
+        self.assertGreater(min(result), 0.7)
+
     def testConeEstimatorFactoriseMnistDataset(self):
         result, time = self.runMnistDataset(ConeEstimatorFactorise(3))
         self.assertGreater(result, 0.6)
-        self.assertLess(time, timedelta(seconds=15))
+        self.assertLess(time, timedelta(seconds=60))
 
     def testConeEstimatorGradientMnistDataset(self):
         result, time = self.runMnistDataset(ConeEstimatorGradient(3))
         self.assertGreater(result, 0.6)
-        self.assertLess(time, timedelta(seconds=3))
+        self.assertLess(time, timedelta(seconds=120))
 
     def testConeEstimatorUnusualClassValues(self):
         result = self.runArtificial(10, 3, ConeEstimatorFactorise(3),
@@ -70,7 +75,7 @@ class ConeEstimatorTestCase(unittest.TestCase):
         data = SvmLightDataset(*load_svmlight_file(
             'data/wn-noun-dependencies-10.mat'))
         result, time = self.runDataset(
-            ConeEstimator(3), data)
+            ConeEstimatorGreedy(4), data)
         self.assertGreater(min(result), 0.6)
 
     def runMnistDataset(self, classifier):
@@ -109,6 +114,7 @@ class ConeEstimatorTestCase(unittest.TestCase):
             class_values,
             cv = method,
             score_func = lambda x,y: f1_score(x,y, pos_label = positive))
+        logging.info("Classifier: %s, dataset F1: %s", str(classifier), str(result))
         return result
 
     def generateTestData(self, cone, data_dims, cone_dims):
@@ -127,29 +133,6 @@ class ConeEstimatorTestCase(unittest.TestCase):
         class_values = np.array([m[x]() for x in class_values])
         return data, class_values
 
-        # docs = []
-        # class_values = []
-        # zero = np.zeros(lattice.dimensions)
-        # for i in xrange(2000):
-        #     # Generate positive data half the time
-        #     if random.random_sample() > 0.5:
-        #         v = random.random_sample(lattice.dimensions)
-        #         v = np.array(np.dot(lattice.basis_matrix, v))[0]
-        #     else:
-        #         v = random.random_sample(lattice.dimensions)*2 - 1.0
-        #     doc = svm.Document(i, svm.SupportVector([
-        #                 (j + 1, v[j]) for j in range(lattice.dimensions)]))
-        #     docs.append(doc)
-        #     pos = lattice.ge(v, zero)
-        #     class_values.append(1 if pos else -1)
-        # return docs, class_values
-
-    # def testConstruction(self):
-    #     self.assertEqual(str(Document(1,SupportVector([(1,1.),(2,1.),(3,1.)]))),
-    #                      "Document(1, SupportVector({1: 1.0, 2: 1.0, 3: 1.0}))")
-
-    # def testConstructionNeedsSupportVector(self):
-    #     self.assertRaises(TypeError, Document, 2, [1,2,3])
     
 if __name__ == '__main__':
     unittest.main()

@@ -4,7 +4,7 @@ import logging
 
 from sklearn.base import BaseEstimator
 from sklearn.multiclass import OneVsRestClassifier
-from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
 from sklearn import preprocessing
 
 import numpy as np
@@ -43,11 +43,10 @@ class ConeEstimatorBase(BaseEstimator):
                      len(data), self.dimensions)
         self.learn_cone(data, class_values)
         predictions = self.predict(data)
-        logging.info("Training set precision: %f recall: %f f1: %f",
-                      precision_score(class_values, predictions),
-                      recall_score(class_values, predictions),
-                      f1_score(class_values, predictions))
-    
+        self.confusion = confusion_matrix(
+            input_class_values, predictions).tolist()
+        logging.debug("Training set confusion: %s", str(self.confusion))
+
     def predict(self, data):
         results = [1 if x > 0 else 0
                    for x in self.decision_function(data)]
