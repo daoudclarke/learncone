@@ -15,6 +15,7 @@ from learncone.ConeEstimatorGradient import ConeEstimatorGradient
 from learncone.ConeEstimatorFactorise import ConeEstimatorFactorise
 from learncone.ConeEstimatorGreedy import ConeEstimatorGreedy
 from learncone.ConeEstimatorBase import positive
+from learncone.ConeEstimatorKernel import ConeEstimatorKernel
 from learncone.ConeEstimator import ConeEstimator
 from learncone.ArtificialData import make_data
 
@@ -41,15 +42,26 @@ class ConeEstimatorTestCase(unittest.TestCase):
 
     def testConeEstimatorGradientArtificialData(self):
         result = self.runArtificial(10, 3, ConeEstimatorGradient(3))
-        self.assertGreater(min(result), 0.9)
+        self.assertGreater(min(result), 0.85)
 
     def testConeEstimatorGreedyArtificialData(self):
         result = self.runArtificial(10, 3, ConeEstimatorGreedy(3))
         self.assertGreater(min(result), 0.7)
 
+    def testConeEstimatorKernelArtificialData(self):
+        result = self.runArtificial(10, 3, ConeEstimatorKernel(3), 50)
+        self.assertGreater(min(result), 0.7)
+
+    def testConeEstimatorKernelWordNet(self):
+        classifier = ConeEstimatorKernel(3)
+        dataset = SvmLightDataset(*load_svmlight_file(
+                'data/wn-noun-dependencies-10.mat'))
+        result, time = self.runDataset(classifier, dataset, 100)
+        self.assertGreater(min(result), 0.2)
+
     def testConeEstimatorFactoriseMnistDataset(self):
         result, time = self.runMnistDataset(ConeEstimatorFactorise(3))
-        self.assertGreater(result, 0.6)
+        self.assertGreater(result, 0.5)
         self.assertLess(time, timedelta(seconds=60))
 
     def testConeEstimatorGradientMnistDataset(self):
@@ -60,32 +72,28 @@ class ConeEstimatorTestCase(unittest.TestCase):
     def testConeEstimatorUnusualClassValues(self):
         result = self.runArtificial(10, 3, ConeEstimatorFactorise(3),
                                     generator = self.generateMappedTestData)
-        self.assertGreater(min(result), 0.9)
+        self.assertGreater(min(result), 0.85)
 
     def testConeEstimatorArtificialData(self):
         result = self.runArtificial(10, 3, ConeEstimator(3))
-        self.assertGreater(min(result), 0.9)
+        self.assertGreater(min(result), 0.85)
 
     def testConeEstimatorMultiClassValues(self):
         result = self.runArtificial(10, 3, ConeEstimator(3),
                                     generator = self.generateMultiClassTestData)
         self.assertGreater(min(result), 0.7)
 
-    def testConeEstimatorWordNetDataset(self):
-        data = SvmLightDataset(*load_svmlight_file(
-            'data/wn-noun-dependencies-10.mat'))
-        result, time = self.runDataset(
-            ConeEstimatorGreedy(4), data)
-        self.assertGreater(min(result), 0.6)
-
     def runMnistDataset(self, classifier):
         dataset = fetch_mldata('mnist-original')
-        return self.runDataset(classifier, dataset)
+        return self.runDataset(classifier, dataset, 500)
 
-    def runDataset(self, classifier, dataset):
+    def runDataset(self, classifier, dataset, train_size):
         binary_map = np.vectorize(lambda x : 1 if x == 1 else 0)
         binary_target = binary_map(dataset.target)
-        method = ShuffleSplit(len(dataset.target), n_iterations = 1, train_size = 300, test_size = 500)
+        if dataset.target.shape[0] > 500:
+            method = ShuffleSplit(len(dataset.target), n_iterations = 1, train_size = train_size, test_size = 500)
+        else:
+            method = ShuffleSplit(len(dataset.target), n_iterations = 1)
         start = datetime.now()
         result = cross_val_score(
             classifier,
@@ -97,7 +105,7 @@ class ConeEstimatorTestCase(unittest.TestCase):
         time = datetime.now() - start
         return result, time
 
-    def runArtificial(self, data_dims, cone_dims, classifier,
+    def runArtificial(self, data_dims, cone_dims, classifier, train_size = 500,
                       generator = None):
         """Construct an artificial dataset and test we can learn it"""
         if generator is None:
@@ -107,7 +115,7 @@ class ConeEstimatorTestCase(unittest.TestCase):
         cone = rand_array.reshape( (cone_dims, data_dims) )
         data, class_values = generator(cone, data_dims, cone_dims)
         logging.info("Generated %d test data instances", len(class_values))
-        method = ShuffleSplit(len(class_values), n_iterations = 3, train_size = 500, test_size = 500)
+        method = ShuffleSplit(len(class_values), n_iterations = 3, train_size = train_size, test_size = 500)
         positive = max(class_values)
         result = cross_val_score(
             classifier, data,
@@ -117,8 +125,8 @@ class ConeEstimatorTestCase(unittest.TestCase):
         logging.info("Classifier: %s, dataset F1: %s", str(classifier), str(result))
         return result
 
-    def generateTestData(self, cone, data_dims, cone_dims):
-        dataset = make_data(data_dims, cone_dims)
+    def generateTestData(self, cone, data_dims, cone_dims, num_instances=1000):
+        dataset = make_data(data_dims, cone_dims, size=num_instances)
         return dataset.data, dataset.target
 
     def generateMappedTestData(self, cone, data_dims, cone_dims):
