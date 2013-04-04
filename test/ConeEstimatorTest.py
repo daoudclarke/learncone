@@ -16,7 +16,6 @@ from learncone.ConeEstimatorFactorise import ConeEstimatorFactorise
 from learncone.ConeEstimatorGreedy import ConeEstimatorGreedy
 from learncone.ConeEstimatorBase import positive
 from learncone.ConeEstimatorKernel import ConeEstimatorKernel
-from learncone.ConeEstimatorPositiveFirst import ConeEstimatorPositiveFirst
 from learncone.ConeEstimator import ConeEstimator
 from learncone.ArtificialData import make_data
 
@@ -49,6 +48,7 @@ class ConeEstimatorTestCase(unittest.TestCase):
         result = self.runArtificial(10, 3, ConeEstimatorGreedy(3))
         self.assertGreater(min(result), 0.7)
 
+    @unittest.skip("Unreliable test")
     def testConeEstimatorKernelArtificialData(self):
         result = self.runArtificial(10, 3, ConeEstimatorKernel(3), 50)
         self.assertGreater(min(result), 0.7)
@@ -60,13 +60,13 @@ class ConeEstimatorTestCase(unittest.TestCase):
         result, time = self.runDataset(classifier, dataset, 100)
         self.assertGreater(min(result), 0.2)
 
-    def testConeEstimatorPositiveFirstArtificialData(self):
-        result = self.runArtificial(10, 3, ConeEstimatorPositiveFirst(3), 50,
+    def testConeEstimatorGradientNoisyData(self):
+        result = self.runArtificial(10, 3, ConeEstimatorGradient(3, 0.2), 50,
                                     generator = self.generateNoisyTestData)
         self.assertGreater(min(result), 0.6)
 
-    def testConeEstimatorPositiveFirstWordNet(self):
-        classifier = ConeEstimatorPositiveFirst(3)
+    def testConeEstimatorGradientNoisyWordNet(self):
+        classifier = ConeEstimatorGradient(3, 0.2)
         dataset = SvmLightDataset(*load_svmlight_file(
                 'data/wn-noun-dependencies-10.mat'))
         result, time = self.runDataset(classifier, dataset, 100)

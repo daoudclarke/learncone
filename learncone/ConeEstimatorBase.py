@@ -16,15 +16,17 @@ def positive(m, v):
     return (product >= -1e-10).all()
 
 class ConeEstimatorBase(BaseEstimator):
-    def __init__(self, dimensions=1):
+    def __init__(self, dimensions=1, noise=0.0):
         if dimensions < 1:
             raise ValueError("Need at least one dimension to fit data.")
         self.dimensions = dimensions
+        self.noise = noise
         logging.debug("Initialised to %d dimensions", self.dimensions)
 
     def get_params(self, deep=True):
         params = BaseEstimator.get_params(self, deep)
         params['dimensions'] = self.dimensions
+        params['noise'] = self.noise
         logging.debug("Getting params: %s", str(params))
         return params
     
@@ -32,6 +34,8 @@ class ConeEstimatorBase(BaseEstimator):
         logging.debug("Setting params")
         if 'dimensions' in params:
             self.dimensions = params['dimensions']
+        if 'noise' in params:
+            self.noise = params['noise']
         return self
 
     def fit(self, data, input_class_values):

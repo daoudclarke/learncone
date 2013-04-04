@@ -8,9 +8,6 @@ from ConeEstimatorBase import ConeEstimatorBase
 from ConeEstimatorGradient import ConeEstimatorGradient
 
 class ConeEstimator(ConeEstimatorBase):
-    def __init__(self, dimensions):
-        ConeEstimatorBase.__init__(self, dimensions)
-
     def fit(self, data, class_values):
         if len(set(class_values)) > 2:
             self.classifier = OneVsRestClassifier(
