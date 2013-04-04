@@ -16,6 +16,7 @@ from learncone.ConeEstimatorFactorise import ConeEstimatorFactorise
 from learncone.ConeEstimatorGreedy import ConeEstimatorGreedy
 from learncone.ConeEstimatorBase import positive
 from learncone.ConeEstimatorKernel import ConeEstimatorKernel
+from learncone.ConeEstimatorPositiveFirst import ConeEstimatorPositiveFirst
 from learncone.ConeEstimator import ConeEstimator
 from learncone.ArtificialData import make_data
 
@@ -58,6 +59,18 @@ class ConeEstimatorTestCase(unittest.TestCase):
                 'data/wn-noun-dependencies-10.mat'))
         result, time = self.runDataset(classifier, dataset, 100)
         self.assertGreater(min(result), 0.2)
+
+    def testConeEstimatorPositiveFirstArtificialData(self):
+        result = self.runArtificial(10, 3, ConeEstimatorPositiveFirst(3), 50,
+                                    generator = self.generateNoisyTestData)
+        self.assertGreater(min(result), 0.6)
+
+    def testConeEstimatorPositiveFirstWordNet(self):
+        classifier = ConeEstimatorPositiveFirst(3)
+        dataset = SvmLightDataset(*load_svmlight_file(
+                'data/wn-noun-dependencies-10.mat'))
+        result, time = self.runDataset(classifier, dataset, 100)
+        self.assertGreater(min(result), 0.6)
 
     def testConeEstimatorFactoriseMnistDataset(self):
         result, time = self.runMnistDataset(ConeEstimatorFactorise(3))
@@ -127,6 +140,10 @@ class ConeEstimatorTestCase(unittest.TestCase):
 
     def generateTestData(self, cone, data_dims, cone_dims, num_instances=1000):
         dataset = make_data(data_dims, cone_dims, size=num_instances)
+        return dataset.data, dataset.target
+
+    def generateNoisyTestData(self, cone, data_dims, cone_dims, num_instances=1000):
+        dataset = make_data(data_dims, cone_dims, size=num_instances, noise=0.1)
         return dataset.data, dataset.target
 
     def generateMappedTestData(self, cone, data_dims, cone_dims):

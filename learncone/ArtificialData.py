@@ -18,7 +18,7 @@ class ArtificialData:
         self.cone_dims = cone_dims
         self.size = size
 
-    def generate(self):
+    def generate(self, noise=0.0):
         rand_array =  random.random_sample(self.data_dims*self.cone_dims)*2 - 1
         self.cone = rand_array.reshape( (self.cone_dims, self.data_dims) )
         self.data = []
@@ -31,7 +31,10 @@ class ArtificialData:
                 v = np.array(np.dot(cone_inv, v))
             else:
                 v = random.random_sample(self.data_dims)*2 - 1.0
-            self.data.append(v)
+            if random.random_sample() < noise:
+                self.data.append(-v)
+            else:
+                self.data.append(v)
             if positive(self.cone, v):
                 self.target.append(1)
             else:
@@ -39,7 +42,7 @@ class ArtificialData:
         self.data = np.array(self.data)
         self.target = np.array(self.target)
 
-def make_data(data_dims, cone_dims, size=3000):
+def make_data(data_dims, cone_dims, size=3000, noise=0.0):
     data = ArtificialData(data_dims, cone_dims, size)
-    data.generate()
+    data.generate(noise)
     return data
