@@ -72,6 +72,13 @@ class ConeEstimatorTestCase(unittest.TestCase):
         result, time = self.runDataset(classifier, dataset, 100)
         self.assertGreater(min(result), 0.6)
 
+    def testConeEstimatorNoisyWordNet(self):
+        classifier = ConeEstimator(3, 0.2)
+        dataset = SvmLightDataset(*load_svmlight_file(
+                'data/wn-noun-dependencies-10.mat'))
+        result, time = self.runDataset(classifier, dataset, 100)
+        self.assertGreater(min(result), 0.6)
+
     def testConeEstimatorFactoriseMnistDataset(self):
         result, time = self.runMnistDataset(ConeEstimatorFactorise(3))
         self.assertGreater(result, 0.5)

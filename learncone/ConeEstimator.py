@@ -10,13 +10,13 @@ from ConeEstimatorGradient import ConeEstimatorGradient
 class ConeEstimator(ConeEstimatorBase):
     def fit(self, data, class_values):
         if len(set(class_values)) > 2:
-            self.classifier = OneVsRestClassifier(
-                ConeEstimatorGradient(self.dimensions))
-            self.classifier.fit(data, class_values)
+            subclassifier = ConeEstimatorGradient()
+            subclassifier.set_params(**self.get_params())
+            self.classifier = OneVsRestClassifier(subclassifier)
         else:
-            self.classifier = ConeEstimatorGradient(
-                self.dimensions)
-            self.classifier.fit(data, class_values)
+            self.classifier = ConeEstimatorGradient()
+            self.classifier.set_params(**self.get_params())
+        self.classifier.fit(data, class_values)
 
 
     def predict(self, data):
