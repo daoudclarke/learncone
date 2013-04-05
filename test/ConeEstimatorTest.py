@@ -132,8 +132,7 @@ class ConeEstimatorTestCase(unittest.TestCase):
             generator = self.generateTestData
         rand_array =  random.random_sample(data_dims*cone_dims)*2 - 1
         logging.info("Generating %d dimensional cone in %d dimensions", cone_dims, data_dims)
-        cone = rand_array.reshape( (cone_dims, data_dims) )
-        data, class_values = generator(cone, data_dims, cone_dims)
+        data, class_values = generator(data_dims, cone_dims)
         logging.info("Generated %d test data instances", len(class_values))
         method = ShuffleSplit(len(class_values), n_iterations = 3, train_size = train_size, test_size = 500)
         positive = max(class_values)
@@ -145,22 +144,22 @@ class ConeEstimatorTestCase(unittest.TestCase):
         logging.info("Classifier: %s, dataset F1: %s", str(classifier), str(result))
         return result
 
-    def generateTestData(self, cone, data_dims, cone_dims, num_instances=1000):
+    def generateTestData(self, data_dims, cone_dims, num_instances=1000):
         dataset = make_data(data_dims, cone_dims, size=num_instances)
         return dataset.data, dataset.target
 
-    def generateNoisyTestData(self, cone, data_dims, cone_dims, num_instances=1000):
+    def generateNoisyTestData(self, data_dims, cone_dims, num_instances=1000):
         dataset = make_data(data_dims, cone_dims, size=num_instances, noise=0.1)
         return dataset.data, dataset.target
 
-    def generateMappedTestData(self, cone, data_dims, cone_dims):
-        data, class_values = self.generateTestData(cone, data_dims, cone_dims)
+    def generateMappedTestData(self, data_dims, cone_dims):
+        data, class_values = self.generateTestData(data_dims, cone_dims)
         m = {0: -1, 1: 7}
         class_values = np.array([m[x] for x in class_values])
         return data, class_values
 
-    def generateMultiClassTestData(self, cone, data_dims, cone_dims):
-        data, class_values = self.generateTestData(cone, data_dims, cone_dims)
+    def generateMultiClassTestData(self, data_dims, cone_dims):
+        data, class_values = self.generateTestData(data_dims, cone_dims)
         m = {0: lambda: random.randint(-2,0), 1: lambda: 1}
         class_values = np.array([m[x]() for x in class_values])
         return data, class_values
