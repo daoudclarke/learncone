@@ -40,7 +40,11 @@ class ConeEstimatorBase(BaseEstimator):
 
     def fit(self, data, input_class_values):
         self.encoder = preprocessing.LabelEncoder()
+        logging.debug("Input classes: %s", str(set(input_class_values)))
         class_values = self.encoder.fit_transform(input_class_values)
+        logging.debug("Encoder classes: %s", str(self.encoder.classes_))
+        if len(self.encoder.classes_) <= 1:
+            raise ValueError("Need at least two class values.")
         if self.dimensions < 1:
             raise ValueError("Need at least one dimension to fit data.")
         logging.info("Starting cone learning from %d data points in %d dimensions",
