@@ -23,14 +23,14 @@ class ConeEstimatorGradient(ConeEstimatorBase):
 
     def learn_cone(self, vectors, class_values):
         orig_dims = len(vectors[0])
-        estimate = random.random_sample(orig_dims*self.dimensions)*2 - 1
+        self.model = random.random_sample(orig_dims*self.dimensions)*2 - 1
         estimate_shape = (self.dimensions, orig_dims) 
-        estimate = estimate.reshape(estimate_shape)
+        self.model = self.model.reshape(estimate_shape)
         scale = None
         for i in range(300):
             logging.debug("Iteration %d", i)
-            logging.debug("Estimate %s", str(estimate))
-            difference, size = self.get_difference(vectors, class_values, estimate)
+            logging.debug("Estimate %s", str(self.model))
+            difference, size = self.get_difference(vectors, class_values, self.model)
             logging.debug("Difference size: %f", size)
             if size == 0.0:
                 break
@@ -40,7 +40,7 @@ class ConeEstimatorGradient(ConeEstimatorBase):
                 scale = min(0.5, 10.0/size)
             logging.debug("Finding correct scale factor")    
             while True:
-                new_estimate = estimate - scale*difference
+                new_estimate = self.model - scale*difference
                 difference, new_size = self.get_difference(vectors, class_values, new_estimate)
                 logging.debug("Size at scale factor %g: %f", scale, new_size)
                 if new_size < size:
@@ -49,13 +49,12 @@ class ConeEstimatorGradient(ConeEstimatorBase):
                 scale *= 0.5
                 if scale < 1e-100:
                     logging.debug("Converged at iteration: %d", i)
-                    self.model = estimate
                     return
 
-            estimate = new_estimate
+            self.model = new_estimate
             scale *= 1.2
             logging.debug("Increasing scale to %g", scale)
-        self.model = estimate
+        self.model = self.model
 
     def get_difference(self, vectors, class_values, estimate):
         mapped = np.dot(estimate, vectors.T)
