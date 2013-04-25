@@ -106,17 +106,15 @@ class ConeEstimatorTestCase(unittest.TestCase):
         self.assertGreater(min(result), 0.7)
 
     def testConeEstimatorConsistency(self):
-        
-        #for seed in range(1001, 1010):
         random.seed(1006)
         dataset = self.generateTestData(2, 2)        
         accuracies = []
         for i in range(5):
-            results = self.runDataset(ConeEstimator(3, 0.0),
+            results = self.runDataset(ConeEstimator(2, 0.0),
                                       dataset, 100)
             print results
             accuracies.append(results[0])
-        self.assertGreater(min(accuracies), 0.9)
+        self.assertGreater(min(accuracies), 0.95)
 
     def runMnistDataset(self, classifier):
         dataset = fetch_mldata('mnist-original')
