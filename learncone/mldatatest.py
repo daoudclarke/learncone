@@ -17,6 +17,9 @@ from sklearn.cross_validation import ShuffleSplit
 from sklearn.datasets import fetch_mldata
 from sklearn.metrics import fbeta_score, f1_score, precision_score, recall_score
 
+import numpy as np
+from numpy import random
+
 import sys
 import logging
 import profile
@@ -34,13 +37,16 @@ def run():
     classifiers = [ConeEstimator(10)]
         #cone_pipeline]
 
-    #dataset = fetch_mldata('mnist-original')
-    dataset = fetch_mldata('sonar')
+    dataset = fetch_mldata('mnist-original')
+    #dataset = fetch_mldata('sonar')
     print "Dataset size: ", len(dataset.data)
     print "Features: ", len(dataset.data[0])
 
+    binary_map = np.vectorize(lambda x : 1 if x == 1 else 0)
+    dataset.target = binary_map(dataset.target)
+
     for classifier in classifiers:
-        method = ShuffleSplit(len(dataset.data), n_iterations = 1)
+        method = ShuffleSplit(len(dataset.data), n_iterations = 1, train_size=400, test_size=400)
         result = cross_val_score(
             classifier, dataset.data,
             dataset.target,
@@ -50,6 +56,7 @@ def run():
     logging.info("Test complete")
 
 if __name__ == "__main__":
+    random.seed(1001)
     logging.basicConfig(filename='../results/mldatatest.log',
                         level=logging.DEBUG,
                         format='%(asctime)s %(levelname)s %(message)s')

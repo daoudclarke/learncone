@@ -74,7 +74,7 @@ class ConeEstimatorGradient(ConeEstimatorBase):
     def get_difference(self, vectors, class_values, estimate):
         mapped = np.dot(estimate, vectors.T)
         fixed = self.project(mapped.T, class_values).T
-        difference = np.dot(mapped, vectors) - np.dot(fixed, vectors)
+        difference = np.dot(mapped - fixed, vectors)
         size = np.sum(abs(difference))
         return difference, size
 
