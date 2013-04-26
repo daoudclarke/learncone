@@ -44,10 +44,10 @@ class ConeEstimatorGradient(ConeEstimatorBase):
 
     def learn_cone_iterate(self, vectors, class_values, num_iterations):
         scale = None
+        difference, size = self.get_difference(vectors, class_values, self.model)
+        logging.debug("Initial difference size: %f", size)
         for i in range(num_iterations):
             logging.debug("Iteration %d", i)
-            difference, size = self.get_difference(vectors, class_values, self.model)
-            logging.debug("Difference size: %f", size)
             if size == 0.0:
                 break
 
@@ -67,6 +67,7 @@ class ConeEstimatorGradient(ConeEstimatorBase):
                     return
 
             self.model = new_estimate
+            size = new_size
             scale *= 1.2
             logging.debug("Increasing scale to %g", scale)
         self.model = self.model
