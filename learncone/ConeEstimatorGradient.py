@@ -91,9 +91,8 @@ class ConeEstimatorGradient(ConeEstimatorBase):
     def project(self, vectors, class_values):
         projected = ConeEstimatorBase.project(self, vectors, class_values)
 
-        differences = []
-        for i in range(len(projected)):
-            differences.append( (i, np.sum(abs(vectors[i] - projected[i]))) )
+        difference_sizes = np.sum(abs(vectors - projected), axis=1)
+        differences = zip(xrange(len(difference_sizes)), difference_sizes)
         logging.debug("Total number of instances: %d", len(differences))
 
         pos = [differences[i] for i in range(len(class_values))
