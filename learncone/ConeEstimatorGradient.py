@@ -46,12 +46,10 @@ class ConeEstimatorGradient(ConeEstimatorBase):
         scale = None
         for i in range(num_iterations):
             logging.debug("Iteration %d", i)
-            logging.debug("Estimate %s", str(self.model))
             difference, size = self.get_difference(vectors, class_values, self.model)
             logging.debug("Difference size: %f", size)
             if size == 0.0:
                 break
-            logging.debug("Difference %s", str(difference))
 
             if scale is None:
                 scale = min(0.5, 10.0/size)
@@ -75,9 +73,7 @@ class ConeEstimatorGradient(ConeEstimatorBase):
 
     def get_difference(self, vectors, class_values, estimate):
         mapped = np.dot(estimate, vectors.T)
-        logging.debug("Mapped %s", str(mapped))
         fixed = self.project(mapped.T, class_values).T
-        logging.debug("Fixed %s", str(fixed))
         difference = np.dot(mapped, vectors) - np.dot(fixed, vectors)
         size = np.sum(abs(difference))
         return difference, size
@@ -87,7 +83,6 @@ class ConeEstimatorGradient(ConeEstimatorBase):
         if num_noisy == 0:
             return differences
         ordered = sorted(differences, key=lambda x: x[1])
-        logging.debug("Ordered differences: %s", str(ordered))
         # values = [x[1] for x in differences]
         # avg = sum(values)/len(values)
         logging.debug("Removing %d noisy instances", num_noisy)

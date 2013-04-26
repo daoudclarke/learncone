@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # Bismillahi-r-Rahmani-r-Rahim
 
 from ConeEstimator import ConeEstimator
@@ -16,6 +17,7 @@ from sklearn.cross_validation import ShuffleSplit
 from sklearn.datasets import fetch_mldata
 from sklearn.metrics import fbeta_score, f1_score, precision_score, recall_score
 
+import sys
 import logging
 import profile
 
@@ -25,18 +27,20 @@ def run():
     #                           ('classification', ConeEstimator())])
     # cone_pipeline = Pipeline([('random PCA', RandomizedPCA(n_components=50)),
     #                           ('classification', ConeEstimator(3))])
-    classifiers = [DecisionTreeClassifier(),
-                   MultinomialNB(),
-                   LinearSVC(),
-                   ConeEstimator(10)]
+    # classifiers = [DecisionTreeClassifier(),
+    #                MultinomialNB(),
+    #                LinearSVC(),
+    #                ConeEstimator(10)]
+    classifiers = [ConeEstimator(10)]
         #cone_pipeline]
 
-    dataset = fetch_mldata('mnist-original')
+    #dataset = fetch_mldata('mnist-original')
+    dataset = fetch_mldata('sonar')
     print "Dataset size: ", len(dataset.data)
     print "Features: ", len(dataset.data[0])
 
     for classifier in classifiers:
-        method = ShuffleSplit(len(dataset.data), n_iterations = 1, train_size = 2000, test_size = 1000)
+        method = ShuffleSplit(len(dataset.data), n_iterations = 1)
         result = cross_val_score(
             classifier, dataset.data,
             dataset.target,
@@ -50,8 +54,10 @@ if __name__ == "__main__":
                         level=logging.DEBUG,
                         format='%(asctime)s %(levelname)s %(message)s')
     try:
-        #profile.run("run()")
-        run()
+        if len(sys.argv) > 1 and sys.argv[1] == 'profile':
+            profile.run("run()")
+        else:
+            run()
     except:
         logging.exception("Exception on test run - aborting")
         raise
