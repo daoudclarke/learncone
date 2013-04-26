@@ -28,12 +28,11 @@ class ConeEstimatorGradient(ConeEstimatorBase):
             self.learn_cone_iterate(vectors, class_values, 10)
             predictions = self.predict(vectors)
             score = f1_score(class_values, predictions)
-            logging.debug("Initial estimate %d: %f", i, score)
+            logging.info("Initial estimate %d: %f", i, score)
             estimates.append( (np.copy(self.model), score) )
         best_estimate = max(estimates, key = lambda x: x[1])
-        logging.debug("Using estimate with score %f", best_estimate[1])
+        logging.info("Using estimate with score %f", best_estimate[1])
         self.model = best_estimate[0]
-        logging.debug("Beginning complete estimate")
         self.learn_cone_iterate(vectors, class_values, 300)
 
     def initialise_estimate(self, vectors):

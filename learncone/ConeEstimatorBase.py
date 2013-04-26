@@ -53,7 +53,7 @@ class ConeEstimatorBase(BaseEstimator):
         predictions = self.predict(data)
         self.confusion = confusion_matrix(
             input_class_values, predictions).tolist()
-        logging.debug("Training set confusion: %s", str(self.confusion))
+        logging.info("Training set confusion: %s", str(self.confusion))
 
     def predict(self, data):
         results = [1 if x > 0 else 0
