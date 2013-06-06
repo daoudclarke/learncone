@@ -16,11 +16,12 @@ def positive(m, v):
     return (product >= -1e-10).all()
 
 class ConeEstimatorBase(BaseEstimator):
-    def __init__(self, dimensions=1, noise=0.0):
+    def __init__(self, dimensions=1, noise=0.0, epsilon=0.0):
         if dimensions < 1:
             raise ValueError("Need at least one dimension to fit data.")
         self.dimensions = dimensions
         self.noise = noise
+        self.epsilon = epsilon
         logging.debug("Initialised to %d dimensions", self.dimensions)
 
     def get_params(self, deep=True):
@@ -56,22 +57,22 @@ class ConeEstimatorBase(BaseEstimator):
         logging.info("Training set confusion: %s", str(self.confusion))
 
     def predict(self, data):
-        results = [1 if x > 0 else 0
+        results = [1 if x > -self.epsilon else 0
                    for x in self.decision_function(data)]
         return self.encoder.inverse_transform(results)
 
     def project(self, vectors, class_values):
         working = np.copy(vectors)
-        zero = np.zeros(self.dimensions)
+        eps = np.zeros(self.dimensions) - self.epsilon
         for i in range(len(class_values)):
             if class_values[i] == 1:
                 # Vector in working should be positive
-                working[i] = np.maximum(zero, working[i])
+                working[i] = np.maximum(eps, working[i])
             else:
                 # Subtract from vector if necessary to make it non-positive
                 m = min(working[i])
-                if m > -0.1:
+                if m > -self.epsilon - 0.1:
                     index = np.argmin(working[i])
-                    working[i][index] = -0.1
+                    working[i][index] = -self.epsilon - 0.1
                     #working[i] = working[i] - (m + 0.1)
         return working

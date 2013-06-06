@@ -29,7 +29,8 @@ class ArtificialData:
             is_positive = False
             if random.random_sample() > 0.5:
                 v = random.random_sample(self.cone_dims)
-                v += random.random_sample(self.cone_dims)*(2*epsilon) - epsilon
+                if epsilon > 0.0:
+                    v += random.random_sample(self.cone_dims)*(2*epsilon) - epsilon
                 v = np.array(np.dot(cone_inv, v))
                 is_positive = True
             else:
@@ -44,7 +45,7 @@ class ArtificialData:
         self.data = np.array(self.data)
         self.target = np.array(self.target)
 
-def make_data(data_dims, cone_dims, size=3000, noise=0.0):
+def make_data(data_dims, cone_dims, size=3000, noise=0.0, epsilon=0.0):
     data = ArtificialData(data_dims, cone_dims, size)
-    data.generate(noise)
+    data.generate(noise, epsilon)
     return data
