@@ -67,6 +67,11 @@ class ConeEstimatorTestCase(unittest.TestCase):
                                     generator = self.generateNoisyTestData)
         self.assertGreater(min(result), 0.6)
 
+    def testConeEstimatorGradientApproximateData(self):
+        result, time = self.runArtificial(10, 3, ConeEstimatorGradient(3, 0.2), 50,
+                                    generator = self.generateApproximateTestData)
+        self.assertGreater(min(result), 0.6)
+
     def testConeEstimatorGradientNoisyWordNet(self):
         classifier = ConeEstimatorGradient(3, 0.2)
         dataset = SvmLightDataset(*load_svmlight_file(
@@ -158,6 +163,9 @@ class ConeEstimatorTestCase(unittest.TestCase):
 
     def generateNoisyTestData(self, data_dims, cone_dims, num_instances=1000):
         return make_data(data_dims, cone_dims, size=num_instances, noise=0.1)
+
+    def generateApproximateTestData(self, data_dims, cone_dims, num_instances=1000):
+        return make_data(data_dims, cone_dims, size=num_instances, epsilon=0.3)
 
     def generateMappedTestData(self, data_dims, cone_dims):
         dataset = self.generateTestData(data_dims, cone_dims)

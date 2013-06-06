@@ -18,7 +18,7 @@ class ArtificialData:
         self.cone_dims = cone_dims
         self.size = size
 
-    def generate(self, noise=0.0):
+    def generate(self, noise=0.0, epsilon=0.0):
         rand_array =  random.random_sample(self.data_dims*self.cone_dims)*2 - 1
         self.cone = rand_array.reshape( (self.cone_dims, self.data_dims) )
         self.data = []
@@ -26,19 +26,21 @@ class ArtificialData:
         cone_inv = pinv(self.cone)
         for i in xrange(self.size):
             # Generate positive data half the time
+            is_positive = False
             if random.random_sample() > 0.5:
                 v = random.random_sample(self.cone_dims)
+                v += random.random_sample(self.cone_dims)*(2*epsilon) - epsilon
                 v = np.array(np.dot(cone_inv, v))
+                is_positive = True
             else:
                 v = random.random_sample(self.data_dims)*2 - 1.0
+                is_positive = positive(self.cone, v)
             if random.random_sample() < noise:
                 self.data.append(-v)
             else:
                 self.data.append(v)
-            if positive(self.cone, v):
-                self.target.append(1)
-            else:
-                self.target.append(0)
+            value = 1 if is_positive else 0
+            self.target.append(value)
         self.data = np.array(self.data)
         self.target = np.array(self.target)
 
