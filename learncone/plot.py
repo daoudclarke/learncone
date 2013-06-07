@@ -63,9 +63,9 @@ if __name__ == "__main__":
     #random.seed(1004)
     random.seed(1006)
     dataset = ArtificialData(2, 2, size=500)
-    dataset.generate(epsilon=0.4)
+    dataset.generate(epsilon=0.3)
     plot(dataset, dataset.cone, "../results/cone-true.png")
-    estimator = ConeEstimator(2, 0.0, -10.0)
+    estimator = ConeEstimator(2, 0.0, 0.3)
     estimator.fit(dataset.data, dataset.target)
 
     plot(dataset, estimator.classifier.model,"../results/cone.png")

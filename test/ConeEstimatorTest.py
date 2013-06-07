@@ -68,10 +68,11 @@ class ConeEstimatorTestCase(unittest.TestCase):
         self.assertGreater(min(result), 0.6)
 
     def testConeEstimatorGradientShiftedData(self):
-        result, time = self.runArtificial(10, 3, ConeEstimatorGradient(3, 0.0, 0.5), 500,
-                                    generator = self.generateApproximateTestData)
+        epsilon = 1.5
+        result, time = self.runArtificial(10, 3, ConeEstimatorGradient(3, 0.0, epsilon), 500,
+                                    generator = self.generateApproximateTestData(epsilon))
         print "Accuracy: ", result
-        self.assertGreater(min(result), 0.6)
+        self.assertGreater(min(result), 0.9)
 
     def testConeEstimatorApproximateNoisyWordNet(self):
         classifier = ConeEstimatorGradient(3, 0.15, -100.0) #  250000.0)
@@ -173,8 +174,10 @@ class ConeEstimatorTestCase(unittest.TestCase):
     def generateNoisyTestData(self, data_dims, cone_dims, num_instances=1000):
         return make_data(data_dims, cone_dims, size=num_instances, noise=0.1)
 
-    def generateApproximateTestData(self, data_dims, cone_dims, num_instances=1000):
-        return make_data(data_dims, cone_dims, size=num_instances, epsilon=0.5)
+    def generateApproximateTestData(self, epsilon):
+        def generator(data_dims, cone_dims, num_instances=1000):
+            return make_data(data_dims, cone_dims, size=num_instances, epsilon=epsilon)
+        return generator
 
     def generateMappedTestData(self, data_dims, cone_dims):
         dataset = self.generateTestData(data_dims, cone_dims)
