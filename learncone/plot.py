@@ -62,12 +62,14 @@ if __name__ == "__main__":
                         format='%(asctime)s %(levelname)s %(message)s')
     #random.seed(1004)
     random.seed(1006)
-    dataset = ArtificialData(2, 2, size=10)
-    dataset.generate()
+    dataset = ArtificialData(2, 2, size=500)
+    dataset.generate(epsilon=0.4)
     plot(dataset, dataset.cone, "../results/cone-true.png")
-    estimator = ConeEstimator(2, 0.0)
+    estimator = ConeEstimator(2, 0.0, -10.0)
     estimator.fit(dataset.data, dataset.target)
-    for i in range(5):
-        cone = estimator.classifier.estimates[i]
-        plot(dataset, cone, "../results/cone%d.png" % i)
-        #plot(dataset, estimator.classifier.projected[i], "../results/projected%d.png" % i)
+
+    plot(dataset, estimator.classifier.model,"../results/cone.png")
+    # for i in range(5):
+    #     cone = estimator.classifier.estimates[i]
+    #     plot(dataset, cone, "../results/cone%d.png" % i)
+    #     #plot(dataset, estimator.classifier.projected[i], "../results/projected%d.png" % i)

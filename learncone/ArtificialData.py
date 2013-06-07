@@ -8,6 +8,7 @@ from numpy.linalg import pinv
 
 
 from learncone.ConeEstimatorBase import positive
+from learncone.ConeModel import ConeModel
 
 from datetime import datetime, timedelta
 
@@ -24,24 +25,19 @@ class ArtificialData:
         self.data = []
         self.target = []
         cone_inv = pinv(self.cone)
+        self.model = ConeModel(self.cone, epsilon)
         for i in xrange(self.size):
             # Generate positive data half the time
-            is_positive = False
             if random.random_sample() > 0.5:
                 v = random.random_sample(self.cone_dims)
-                if epsilon > 0.0:
-                    v += random.random_sample(self.cone_dims)*(2*epsilon) - epsilon
                 v = np.array(np.dot(cone_inv, v))
-                is_positive = True
             else:
                 v = random.random_sample(self.data_dims)*2 - 1.0
-                is_positive = positive(self.cone, v)
             if random.random_sample() < noise:
                 self.data.append(-v)
             else:
                 self.data.append(v)
-            value = 1 if is_positive else 0
-            self.target.append(value)
+            self.target.append(self.model.predict([v])[0])
         self.data = np.array(self.data)
         self.target = np.array(self.target)
 

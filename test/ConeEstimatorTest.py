@@ -67,8 +67,8 @@ class ConeEstimatorTestCase(unittest.TestCase):
                                     generator = self.generateNoisyTestData)
         self.assertGreater(min(result), 0.6)
 
-    def testConeEstimatorGradientApproximateData(self):
-        result, time = self.runArtificial(20, 10, ConeEstimatorGradient(3, 0.0, .1), 50,
+    def testConeEstimatorGradientShiftedData(self):
+        result, time = self.runArtificial(10, 3, ConeEstimatorGradient(3, 0.0, 0.5), 500,
                                     generator = self.generateApproximateTestData)
         print "Accuracy: ", result
         self.assertGreater(min(result), 0.6)
@@ -174,7 +174,7 @@ class ConeEstimatorTestCase(unittest.TestCase):
         return make_data(data_dims, cone_dims, size=num_instances, noise=0.1)
 
     def generateApproximateTestData(self, data_dims, cone_dims, num_instances=1000):
-        return make_data(data_dims, cone_dims, size=num_instances, epsilon=2.0)
+        return make_data(data_dims, cone_dims, size=num_instances, epsilon=0.5)
 
     def generateMappedTestData(self, data_dims, cone_dims):
         dataset = self.generateTestData(data_dims, cone_dims)
