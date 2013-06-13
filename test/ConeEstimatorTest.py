@@ -89,6 +89,21 @@ class ConeEstimatorTestCase(unittest.TestCase):
         result, time = self.runDataset(classifier, dataset, 100)
         self.assertGreater(min(result), 0.6)
 
+    def testConeEstimatorGradientNoisyWordNetHighDimensional(self):
+        classifier = ConeEstimatorGradient(10, 0.2, 0.1)
+        dataset = SvmLightDataset(*load_svmlight_file(
+                'data/wn-noun-dependencies-10.mat'))
+        method = ShuffleSplit(len(dataset.target), n_iterations = 1, train_size = 300)
+        train_indices = next(iter(method))[0]
+        train_data = np.asarray(dataset.data)[train_indices]
+        train_target = dataset.target[train_indices]
+        classifier.fit(train_data, train_target)
+        # result, time = self.runDataset(classifier, dataset, 100)
+        confusion = classifier.confusion
+        accuracy = (confusion[0][0] + confusion[1][1])/float(np.sum(confusion))
+        print "Accuracy: %f, Confusion: %s" % (accuracy,confusion)
+        self.assertGreater(accuracy, 0.6)
+
     def testConeEstimatorNoisyWordNet(self):
         classifier = ConeEstimator(3, 0.2)
         dataset = SvmLightDataset(*load_svmlight_file(

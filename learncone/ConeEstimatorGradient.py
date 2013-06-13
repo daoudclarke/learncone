@@ -17,6 +17,7 @@ class ConeEstimatorGradient(ConeEstimatorBase):
         logging.info("Predicting %d values", len(data))
 
         # Add a small constant to allow for rounding errors
+        #decisions = np.dot(self.model, data.T).min(axis=0).flatten() + 1e-10
         decisions = [min(np.dot(self.model,x)) + 1e-10 for x in data]
         logging.debug("First 100 decision values: %s", str(decisions[:100]))
         return decisions
