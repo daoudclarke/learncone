@@ -103,6 +103,14 @@ class ConeEstimatorTestCase(unittest.TestCase, TestUtils):
         print "Accuracy: %f, Confusion: %s" % (accuracy,confusion)
         self.assertGreater(accuracy, 0.6)
 
+    def testConeEstimatorSVMWordnet(self):
+        classifier = ConeEstimatorSVM(10, 1)
+        dataset = self.loadDataset('data/wn-noun-dependencies-10.mat')
+        confusion = self.getConfusion(classifier, dataset)
+        accuracy = (confusion[0][0] + confusion[1][1])/float(np.sum(confusion))
+        print "Accuracy: %f, Confusion: %s" % (accuracy,confusion)
+        self.assertGreater(accuracy, 0.6)
+
     def testConeEstimatorNoisyWordNet(self):
         classifier = ConeEstimator(3, 0.2)
         dataset = SvmLightDataset(*load_svmlight_file(

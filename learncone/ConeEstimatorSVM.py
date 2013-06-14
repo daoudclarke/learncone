@@ -65,7 +65,7 @@ class ConeEstimatorSVM(BaseEstimator):
         predictions = np.array([self.positive_class]*len(data))
         for svc in self.svcs:
             new_predictions = svc.predict(data)
-            predictions &= new_predictions
+            predictions = np.minimum(predictions, new_predictions)
         return predictions
 
         return self.svc.predict(data)
