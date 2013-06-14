@@ -17,14 +17,16 @@ from numpy.linalg import norm, inv, matrix_rank, det, pinv
 from RecallSVMEstimator import RecallSVMEstimator
 
 class ConeEstimatorSVM(BaseEstimator):
-    def __init__(self, max_dimensions=10, beta=1.0):
+    def __init__(self, max_dimensions=10, beta=1.0, C=1.0):
         self.max_dimensions = max_dimensions
         self.beta = beta
+        self.C = C
 
     def get_params(self, deep=True):
         params = BaseEstimator.get_params(self, deep)
         params['max_dimensions'] = self.max_dimensions
         params['beta'] = self.beta
+        params['C'] = self.C
         return params
     
     def set_params(self, **params):
@@ -32,6 +34,8 @@ class ConeEstimatorSVM(BaseEstimator):
             self.max_dimensions = params['max_dimensions']
         if 'beta' in params:
             self.beta = params['beta']
+        if 'C' in params:
+            self.C = params['C']
         return self
 
     def fit(self, data, class_values):
@@ -52,7 +56,7 @@ class ConeEstimatorSVM(BaseEstimator):
                 break
             logging.info("Starting learning iteration %d, data points %d",
                          i, len(class_values))
-            svc = RecallSVMEstimator(self.beta)
+            svc = RecallSVMEstimator(self.beta, C=self.C)
             svc.fit(data, class_values)
             self.svcs.append(svc)
 
