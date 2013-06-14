@@ -17,19 +17,19 @@ from numpy.linalg import norm, inv, matrix_rank, det, pinv
 from RecallSVMEstimator import RecallSVMEstimator
 
 class ConeEstimatorSVM(BaseEstimator):
-    def __init__(self, dimensions=1, beta=1.0):
-        self.dimensions = dimensions
+    def __init__(self, max_dimensions=10, beta=1.0):
+        self.max_dimensions = max_dimensions
         self.beta = beta
 
     def get_params(self, deep=True):
         params = BaseEstimator.get_params(self, deep)
-        params['dimensions'] = self.dimensions
+        params['max_dimensions'] = self.max_dimensions
         params['beta'] = self.beta
         return params
     
     def set_params(self, **params):
-        if 'dimensions' in params:
-            self.dimensions = params['dimensions']
+        if 'max_dimensions' in params:
+            self.max_dimensions = params['max_dimensions']
         if 'beta' in params:
             self.beta = params['beta']
         return self
@@ -39,9 +39,14 @@ class ConeEstimatorSVM(BaseEstimator):
                      len(data))
         if len(set(class_values)) != 2:
             raise ValueError('Need exactly two class values.')
+        original_data = data
+        original_class_values = class_values
 
+        self.positive_class = max(class_values)
         self.svcs = []
-        for i in range(self.dimensions):
+        predictions = np.array([self.positive_class]*len(class_values))
+        scores = []
+        for i in range(self.max_dimensions):
             if len(set(class_values)) != 2:
                 logging.info("Only one class value remains, terminating learning")
                 break
@@ -51,7 +56,10 @@ class ConeEstimatorSVM(BaseEstimator):
             svc.fit(data, class_values)
             self.svcs.append(svc)
 
-            self.positive_class = max(class_values)
+            new_predictions = svc.predict(original_data)
+            predictions = np.minimum(predictions, new_predictions)
+            scores.append(f1_score(original_class_values, predictions))
+
             judgments = svc.predict(data)
             positives = class_values == self.positive_class
             incorrect_negatives = ((class_values != self.positive_class)
@@ -59,7 +67,10 @@ class ConeEstimatorSVM(BaseEstimator):
             new_indices = positives | incorrect_negatives
             data = data[new_indices]
             class_values = class_values[new_indices]
-            
+        logging.info("F1 scores for iterations: %s", str(scores))
+        best_index = np.argmax(scores)
+        self.svcs = self.svcs[:best_index + 1]
+        logging.info("Number of SVM classifiers kept: %d", len(self.svcs))
 
     def predict(self, data):
         predictions = np.array([self.positive_class]*len(data))
