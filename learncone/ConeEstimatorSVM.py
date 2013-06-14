@@ -17,22 +17,37 @@ from numpy.linalg import norm, inv, matrix_rank, det, pinv
 from RecallSVMEstimator import RecallSVMEstimator
 
 class ConeEstimatorSVM(BaseEstimator):
+    def __init__(self, dimensions=1, beta=1.0):
+        self.dimensions = dimensions
+        self.beta = beta
+
     def get_params(self, deep=True):
         params = BaseEstimator.get_params(self, deep)
+        params['dimensions'] = self.dimensions
+        params['beta'] = self.beta
         return params
     
     def set_params(self, **params):
+        if 'dimensions' in params:
+            self.dimensions = params['dimensions']
+        if 'beta' in params:
+            self.beta = params['beta']
         return self
 
     def fit(self, data, class_values):
         logging.info("Starting learning from %d data points",
                      len(data))
+        if len(set(class_values)) != 2:
+            raise ValueError('Need exactly two class values.')
 
         self.svcs = []
-        for i in range(10):
+        for i in range(self.dimensions):
+            if len(set(class_values)) != 2:
+                logging.info("Only one class value remains, terminating learning")
+                break
             logging.info("Starting learning iteration %d, data points %d",
                          i, len(class_values))
-            svc = RecallSVMEstimator(2)
+            svc = RecallSVMEstimator(self.beta)
             svc.fit(data, class_values)
             self.svcs.append(svc)
 

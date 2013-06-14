@@ -48,7 +48,7 @@ class ConeEstimatorTestCase(unittest.TestCase, TestUtils):
         self.assertGreater(min(result), 0.85)
 
     def testConeEstimatorSVMArtificialData(self):
-        result, time = self.runArtificial(10, 3, ConeEstimatorSVM())
+        result, time = self.runArtificial(10, 3, ConeEstimatorSVM(10, 2))
         print "Accuracy: ", result
         self.assertGreater(min(result), 0.85)
 
