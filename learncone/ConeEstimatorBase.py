@@ -28,6 +28,7 @@ class ConeEstimatorBase(BaseEstimator):
         params = BaseEstimator.get_params(self, deep)
         params['dimensions'] = self.dimensions
         params['noise'] = self.noise
+        params['epsilon'] = self.epsilon
         logging.debug("Getting params: %s", str(params))
         return params
     
@@ -37,6 +38,8 @@ class ConeEstimatorBase(BaseEstimator):
             self.dimensions = params['dimensions']
         if 'noise' in params:
             self.noise = params['noise']
+        if 'epsilon' in params:
+            self.epsilon = params['epsilon']
         return self
 
     def fit(self, data, input_class_values):
