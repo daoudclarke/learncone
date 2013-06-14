@@ -47,9 +47,9 @@ class ConeEstimatorTestCase(unittest.TestCase, TestUtils):
         result, time = self.runArtificial(10, 3, ConeEstimatorGradient(3))
         self.assertGreater(min(result), 0.85)
 
-    @unittest.skip("Not yet working")
     def testConeEstimatorSVMArtificialData(self):
         result, time = self.runArtificial(10, 3, ConeEstimatorSVM())
+        print "Accuracy: ", result
         self.assertGreater(min(result), 0.85)
 
     @unittest.skip("Slow")
