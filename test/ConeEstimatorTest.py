@@ -7,7 +7,7 @@ from numpy import random
 from numpy.linalg import pinv
 
 from sklearn.cross_validation import ShuffleSplit, cross_val_score
-from sklearn.metrics import fbeta_score, f1_score, precision_score, recall_score
+from sklearn.metrics import fbeta_score, f1_score, precision_score, recall_score, confusion_matrix
 from sklearn import preprocessing
 from sklearn.datasets import fetch_mldata, load_svmlight_file
 
@@ -16,10 +16,13 @@ from learncone.ConeEstimatorFactorise import ConeEstimatorFactorise
 from learncone.ConeEstimatorGreedy import ConeEstimatorGreedy
 from learncone.ConeEstimatorBase import positive
 from learncone.ConeEstimatorKernel import ConeEstimatorKernel
+from learncone.ConeEstimatorSVM import ConeEstimatorSVM
 from learncone.ConeEstimator import ConeEstimator
 from learncone.ArtificialData import make_data
 
 from datetime import datetime, timedelta
+
+from TestUtils import TestUtils
 
 import logging
 logging.basicConfig(filename='results/unittest.log',
@@ -31,7 +34,7 @@ class SvmLightDataset:
         self.data = data.todense()
         self.target = target
 
-class ConeEstimatorTestCase(unittest.TestCase):
+class ConeEstimatorTestCase(unittest.TestCase, TestUtils):
     def setUp(self):
         logging.info("Starting test: %s", self._testMethodName)
         random.seed(1001)
@@ -42,6 +45,11 @@ class ConeEstimatorTestCase(unittest.TestCase):
 
     def testConeEstimatorGradientArtificialData(self):
         result, time = self.runArtificial(10, 3, ConeEstimatorGradient(3))
+        self.assertGreater(min(result), 0.85)
+
+    @unittest.skip("Not yet working")
+    def testConeEstimatorSVMArtificialData(self):
+        result, time = self.runArtificial(10, 3, ConeEstimatorSVM())
         self.assertGreater(min(result), 0.85)
 
     @unittest.skip("Slow")
@@ -76,30 +84,21 @@ class ConeEstimatorTestCase(unittest.TestCase):
 
     def testConeEstimatorApproximateNoisyWordNet(self):
         classifier = ConeEstimatorGradient(3, 0.15, -100.0) #  250000.0)
-        dataset = SvmLightDataset(*load_svmlight_file(
-                'data/wn-noun-dependencies-10.mat'))
+        dataset = self.loadDataset('data/wn-noun-dependencies-10.mat')
         result, time = self.runDataset(classifier, dataset, 100)
         print "Accuracy: ", result
         self.assertGreater(min(result), 0.6)
 
     def testConeEstimatorGradientNoisyWordNet(self):
         classifier = ConeEstimatorGradient(3, 0.2)
-        dataset = SvmLightDataset(*load_svmlight_file(
-                'data/wn-noun-dependencies-10.mat'))
+        dataset = self.loadDataset('data/wn-noun-dependencies-10.mat')
         result, time = self.runDataset(classifier, dataset, 100)
         self.assertGreater(min(result), 0.6)
 
     def testConeEstimatorGradientNoisyWordNetHighDimensional(self):
         classifier = ConeEstimatorGradient(10, 0.2, 0.1)
-        dataset = SvmLightDataset(*load_svmlight_file(
-                'data/wn-noun-dependencies-10.mat'))
-        method = ShuffleSplit(len(dataset.target), n_iterations = 1, train_size = 300)
-        train_indices = next(iter(method))[0]
-        train_data = np.asarray(dataset.data)[train_indices]
-        train_target = dataset.target[train_indices]
-        classifier.fit(train_data, train_target)
-        # result, time = self.runDataset(classifier, dataset, 100)
-        confusion = classifier.confusion
+        dataset = self.loadDataset('data/wn-noun-dependencies-10.mat')
+        confusion = self.getConfusion(classifier, dataset)
         accuracy = (confusion[0][0] + confusion[1][1])/float(np.sum(confusion))
         print "Accuracy: %f, Confusion: %s" % (accuracy,confusion)
         self.assertGreater(accuracy, 0.6)
@@ -206,6 +205,17 @@ class ConeEstimatorTestCase(unittest.TestCase):
         dataset.target = np.array([m[x]() for x in dataset.target])
         return dataset
 
+    def loadDataset(self, name):
+        return SvmLightDataset(*load_svmlight_file(name))
+
+    def getConfusion(self, classifier, dataset):
+        method = ShuffleSplit(len(dataset.target), n_iterations = 1, train_size = 300)
+        train_indices = next(iter(method))[0]
+        train_data = np.asarray(dataset.data)[train_indices]
+        train_target = dataset.target[train_indices]
+        classifier.fit(train_data, train_target)
+        predictions = classifier.predict(train_data)
+        return confusion_matrix(train_target, predictions).tolist()
     
 if __name__ == '__main__':
     unittest.main()
