@@ -13,6 +13,8 @@ import numpy as np
 from numpy import random
 from numpy.linalg import norm, inv, matrix_rank, det, pinv
 
+from confusionmetrics.metrics import fbeta
+
 class RecallSVMEstimator(LinearSVC):
     def __init__(self, beta=1.0, **params):
         super(RecallSVMEstimator, self).__init__(**params)
@@ -37,21 +39,30 @@ class RecallSVMEstimator(LinearSVC):
         bias_class = zip(biases, class_values)
         bias_class.sort()
         biases_sorted, classes_sorted = zip(*bias_class)
-        judgments = [positive_class]*len(class_values)
-        metrics = []
-        for i in range(len(bias_class)):
-            metrics.append(fbeta_score(classes_sorted, judgments, self.beta))
-            judgments[i] = negative_class
-        #print classes_sorted
-        metrics.append(fbeta_score(classes_sorted, judgments, self.beta))
+        classes_sorted = np.array(classes_sorted)
         #print "Positive Biases: ", biases
         #print "Metrics: ", metrics
+        metrics = getMetrics(classes_sorted, positive_class, self.beta)
         optimal_index = np.argmax(metrics)
         if optimal_index == len(bias_class):
             self.intercept_ = -biases_sorted[optimal_index - 1] - 1e-10
         else:
             self.intercept_ = -biases_sorted[optimal_index] + 1e-10
 
+def getMetrics(classes_sorted, positive_class, beta):
+    metrics = []
+    judgments = np.array([positive_class]*len(classes_sorted))
+    confusion = confusion_matrix(classes_sorted, judgments)
+    metrics.append(fbeta(confusion, beta))
+    for i in range(len(classes_sorted)):
+        if classes_sorted[i] == positive_class:
+            confusion[1][1] -= 1
+            confusion[1][0] += 1
+        else:
+            confusion[0][1] -= 1
+            confusion[0][0] += 1
+        metrics.append(fbeta(confusion, beta))
+    return metrics
         
         # neg_biases = safe_sparse_dot(data[class_values != positive_class], self.coef_.T)
         # print "Negative biases: ", neg_biases
