@@ -40,7 +40,7 @@ class ConeEstimatorSVM(BaseEstimator):
 
     def fit(self, data, original_class_values):
         logging.info("Starting learning from %d data points",
-                     len(data))
+                     data.shape[0])
         if len(set(original_class_values)) != 2:
             raise ValueError('Need exactly two class values.')
         original_data = data
@@ -81,7 +81,7 @@ class ConeEstimatorSVM(BaseEstimator):
         return positives | incorrect_negatives        
 
     def predict(self, data):
-        predictions = np.array([self.positive_class]*len(data))
+        predictions = np.array([self.positive_class]*data.shape[0])
         for svc in self.svcs:
             new_predictions = svc.predict(data)
             predictions = np.minimum(predictions, new_predictions)
