@@ -6,6 +6,8 @@ import numpy as np
 from numpy import random
 from numpy.linalg import pinv
 
+from scipy import sparse
+
 from sklearn.cross_validation import ShuffleSplit, cross_val_score
 from sklearn.metrics import fbeta_score, f1_score, precision_score, recall_score, confusion_matrix
 from sklearn import preprocessing
@@ -110,6 +112,12 @@ class ConeEstimatorTestCase(unittest.TestCase, TestUtils):
         accuracy = (confusion[0][0] + confusion[1][1])/float(np.sum(confusion))
         print "Accuracy: %f, Confusion: %s" % (accuracy,confusion)
         self.assertGreater(accuracy, 0.68)
+
+    def testConeEstimatorSVMSparse(self):
+        classifier = ConeEstimatorSVM(10, 1, 0.001)
+        dataset = self.loadDataset('data/wn-noun-dependencies-10.mat')
+        dataset.data = sparse.csc_matrix(dataset.data)
+        classifier.fit(dataset.data, dataset.target)        
 
     def testConeEstimatorNoisyWordNet(self):
         classifier = ConeEstimator(3, 0.2)

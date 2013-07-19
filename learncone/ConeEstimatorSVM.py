@@ -78,7 +78,7 @@ class ConeEstimatorSVM(BaseEstimator):
         positives = self.class_values == self.positive_class
         incorrect_negatives = ((self.class_values != self.positive_class)
                                & (judgments != self.class_values))
-        return positives | incorrect_negatives        
+        return np.nonzero(positives | incorrect_negatives)[0]
 
     def predict(self, data):
         predictions = np.array([self.positive_class]*data.shape[0])
